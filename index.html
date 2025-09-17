@@ -95,7 +95,7 @@
 </div>
 
 <script>
-const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv&nocache=123456"; // Replace with your published CSV link
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
 
 let lastBalls = [];
 let lastBowler = "";
@@ -148,10 +148,11 @@ function colorScoreline(text){
 
 async function fetchScore() {
   try {
-    const urlWithNoCache = sheetURL + "&nocache=" + Date.now();
-    const res = await fetch(urlWithNoCache);
+    const urlWithNoCache = sheetURL + "&t=" + Date.now();
+    const res = await fetch(urlWithNoCache, { cache: "no-store" });
     const text = await res.text();
-    const line = text.trim().split("\n")[0];
+    
+    const line = text.trim().split("\n")[0]; // only 1 row in sheet
     if (!line) return;
 
     const parts = line.split("|").map(p => p.trim());
@@ -184,7 +185,7 @@ async function fetchScore() {
 }
 
 fetchScore();
-setInterval(fetchScore, 3000);
+setInterval(fetchScore, 1000); // refresh every 1 second
 </script>
 
 </body>
