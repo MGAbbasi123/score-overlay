@@ -1,92 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Cricket Score Overlay</title>
   <style>
     body {
       margin: 0;
-      background: rgba(0,0,0,0); /* transparent background for overlay */
-      overflow: hidden;
+      padding: 0;
+      background: transparent;
       font-family: Arial, sans-serif;
       color: white;
     }
-
-    .scorebar {
-      position: fixed;
-      top: 0;
-      left: 0;
+    .overlay {
+      position: absolute;
+      top: 10px;  /* show on top */
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
       width: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      display: flex;
-      flex-direction: column;
-      padding: 6px 12px;
-      box-sizing: border-box;
-      border-bottom: 3px solid #FFD700; /* golden highlight */
     }
-
-    .line {
-      display: flex;
-      justify-content: center;   /* center align all text */
-      white-space: nowrap;
-      overflow: hidden;
-    }
-
-    /* Auto-shrink text */
-    .shrink {
-      flex: 1;
-      font-size: 22px;
-      font-weight: bold;
-      text-align: center;
-    }
-    .shrink span {
-      display: inline-block;
-      max-width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Fixed readable size */
-    .fixed {
+    .player {
       font-size: 20px;
-      text-align: center;
-      margin-top: 2px;
+    }
+    .scoreline {
+      font-size: 28px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+    .crr {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+    .bowler, .lastover {
+      font-size: 18px;
     }
   </style>
 </head>
 <body>
-  <div class="scorebar">
-    <div class="line shrink"><span id="players">Loading...</span></div>
-    <div class="line shrink"><span id="scoreline">Loading...</span></div>
-    <div class="line fixed" id="bowler">Loading...</div>
-    <div class="line shrink"><span id="lastover">Loading...</span></div>
+  <div class="overlay">
+    <div id="player1" class="player"></div>
+    <div id="player2" class="player"></div>
+
+    <div id="scoreline" class="scoreline"></div>
+    <div id="crr" class="crr"></div>
+
+    <div id="bowler" class="bowler"></div>
+    <div id="lastover" class="lastover"></div>
   </div>
 
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?gid=658195036&single=true&output=csv";
+    const sheetURL = "YOUR_GOOGLE_SHEETS_CSV_LINK";
 
     async function fetchScore() {
       try {
         const res = await fetch(sheetURL);
         const text = await res.text();
+        const parts = text.trim().split("|");
 
-        const line = text.trim().split("\n")[0]; // get first row
-        if (!line) return;
+        // Expected format in Google Sheets row:
+        // Player1 | Player2 | Scoreline | CRR: X.XX | Bowler | Last Over
 
-        const parts = line.split("|").map(p => p.trim());
-
-        document.getElementById("players").innerHTML   = parts[0] || "";
-        document.getElementById("scoreline").innerHTML = parts[1] || "";
-        document.getElementById("bowler").innerHTML    = parts[2] || "";
-        document.getElementById("lastover").innerHTML  = parts[3] || "";
+        document.getElementById("player1").innerText = parts[0] || "";
+        document.getElementById("player2").innerText = parts[1] || "";
+        document.getElementById("scoreline").innerText = parts[2] || "";
+        document.getElementById("crr").innerText = parts[3] || "";
+        document.getElementById("bowler").innerText = "Bowler: " + (parts[4] || "");
+        document.getElementById("lastover").innerText = "Last Over: " + (parts[5] || "");
       } catch (e) {
         console.error("Error fetching score:", e);
       }
     }
 
     fetchScore();
-    setInterval(fetchScore, 5000); // refresh every 5 sec
+    setInterval(fetchScore, 5000);
   </script>
 </body>
 </html>
