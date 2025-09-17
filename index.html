@@ -42,6 +42,14 @@
       text-shadow: 2px 2px 4px black;
     }
 
+    .crr {
+      font-size: 18px;
+      font-weight: normal;
+      text-align: center;
+      color: #ffffff;
+      margin-top: 2px;
+    }
+
     .highlight {
       color: #00ffcc;
     }
@@ -66,18 +74,20 @@
   <div class="scorebar">
     <div class="row">
       <div id="player1" class="highlight"></div>
-      <div id="scoreline" class="scoreline"></div>
+      <div style="flex:1; text-align:center;">
+        <div id="scoreline" class="scoreline"></div>
+        <div id="crr" class="crr"></div>
+      </div>
       <div id="bowlerstats" class="highlight"></div>
     </div>
     <div class="row">
       <div id="player2" class="highlight"></div>
-      <div id="crr"></div>
       <div id="lastover"></div>
     </div>
   </div>
 
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
+    const sheetURL = "YOUR_GOOGLE_SHEETS_CSV_LINK";
 
     function formatBall(ball) {
       const b = ball.trim().toLowerCase();
@@ -96,6 +106,7 @@
         const text = await res.text();
         const parts = text.trim().split("|");
 
+        // Format: Player1 | Player2 | Scoreline | CRR: X | BowlerStats | LastOver
         document.getElementById("player1").innerText   = parts[0] || "";
         document.getElementById("player2").innerText   = parts[1] || "";
         document.getElementById("scoreline").innerText = parts[2] || "";
