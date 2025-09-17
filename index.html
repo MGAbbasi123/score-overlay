@@ -1,75 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <title>Cricket Score Overlay</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
       background: transparent;
       font-family: Arial, sans-serif;
       color: white;
     }
-    .overlay {
-      position: absolute;
-      top: 10px;  /* show on top */
+
+    .scorebar {
+      position: fixed;
+      top: 0;
       left: 50%;
       transform: translateX(-50%);
-      text-align: center;
-      width: 100%;
+      width: 95%;
+      background: linear-gradient(to right, #003366, #005599);
+      border: 2px solid #ffffff55;
+      border-radius: 10px;
+      padding: 8px 14px;
+      box-sizing: border-box;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
     }
-    .player {
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       font-size: 20px;
-    }
-    .scoreline {
-      font-size: 28px;
       font-weight: bold;
-      margin: 8px 0;
     }
-    .crr {
-      font-size: 18px;
-      margin-bottom: 10px;
+
+    .scoreline {
+      font-size: 26px;
+      font-weight: bold;
+      text-align: center;
+      flex: 1;
+      color: #ffdd00;
+      text-shadow: 2px 2px 4px black;
     }
-    .bowler {
-      font-size: 18px;
-      margin-bottom: 5px;
+
+    .highlight {
+      color: #00ffcc;
     }
-    .lastover {
-      font-size: 18px;
-    }
+
     .ball {
       display: inline-block;
       margin: 0 2px;
-      padding: 2px 6px;
+      padding: 3px 6px;
       border-radius: 50%;
       font-weight: bold;
+      font-size: 14px;
     }
-    .run { background: green; }
     .dot { background: gray; }
+    .run { background: green; }
+    .four { background: blue; }
+    .six { background: gold; color: black; }
     .wicket { background: red; }
     .wide { background: orange; }
   </style>
 </head>
 <body>
-  <div class="overlay">
-    <div id="player1" class="player"></div>
-    <div id="player2" class="player"></div>
-
-    <div id="scoreline" class="scoreline"></div>
-    <div id="crr" class="crr"></div>
-
-    <div id="bowler" class="bowler"></div>
-    <div id="lastover" class="lastover"></div>
+  <div class="scorebar">
+    <div class="row">
+      <div id="player1" class="highlight"></div>
+      <div id="scoreline" class="scoreline"></div>
+      <div id="bowlerstats" class="highlight"></div>
+    </div>
+    <div class="row">
+      <div id="player2" class="highlight"></div>
+      <div id="crr"></div>
+      <div id="lastover"></div>
+    </div>
   </div>
 
   <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
 
     function formatBall(ball) {
-      ball = ball.trim().toLowerCase();
-      if (ball === "w") return `<span class="ball wicket">W</span>`;
-      if (ball === "0") return `<span class="ball dot">0</span>`;
-      if (ball === "wd") return `<span class="ball wide">Wd</span>`;
-      if (!isNaN(ball)) return `<span class="ball run">${ball}</span>`;
+      const b = ball.trim().toLowerCase();
+      if (b === "w") return `<span class="ball wicket">W</span>`;
+      if (b === "0") return `<span class="ball dot">0</span>`;
+      if (b === "wd") return `<span class="ball wide">Wd</span>`;
+      if (b === "4") return `<span class="ball four">4</span>`;
+      if (b === "6") return `<span class="ball six">6</span>`;
+      if (!isNaN(b)) return `<span class="ball run">${b}</span>`;
       return `<span class="ball">${ball}</span>`;
     }
 
@@ -79,18 +96,15 @@
         const text = await res.text();
         const parts = text.trim().split("|");
 
-        // Expected format in Google Sheets row:
-        // Player1 | Player2 | Scoreline | CRR: X.XX | Bowler | Last Over
-
-        document.getElementById("player1").innerText = parts[0] || "";
-        document.getElementById("player2").innerText = parts[1] || "";
+        document.getElementById("player1").innerText   = parts[0] || "";
+        document.getElementById("player2").innerText   = parts[1] || "";
         document.getElementById("scoreline").innerText = parts[2] || "";
-        document.getElementById("crr").innerText = parts[3] || "";
-        document.getElementById("bowler").innerText = "Bowler: " + (parts[4] || "");
+        document.getElementById("crr").innerText       = parts[3] || "";
+        document.getElementById("bowlerstats").innerText = parts[4] || "";
 
         if (parts[5]) {
           const balls = parts[5].split(" ").map(formatBall).join(" ");
-          document.getElementById("lastover").innerHTML = "Last Over: " + balls;
+          document.getElementById("lastover").innerHTML = "This Over: " + balls;
         }
       } catch (e) {
         console.error("Error fetching score:", e);
@@ -102,4 +116,3 @@
   </script>
 </body>
 </html>
-
