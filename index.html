@@ -1,26 +1,95 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="refresh" content="5"> <!-- refresh every 5 sec -->
+  <meta charset="UTF-8">
+  <title>Cricket Overlay</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { 
-      margin: 0; 
-      background: rgba(0,0,0,0); /* transparent */
-      overflow: hidden; 
-      font-family: Arial, sans-serif;
-      font-size: 28px;
-      font-weight: bold;
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: rgba(0,0,0,0);
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+    #overlayBar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.8);
       color: white;
-      text-align: center;
+      font-family: Arial, sans-serif;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 8px 12px;
     }
-    iframe { 
-      width: 100vw; 
-      height: 100vh; 
-      border: 0; 
+    .section {
+      margin: 0 10px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.1);
     }
+    .batsman { color: #FFD700; }   /* gold */
+    .score { color: #00FF7F; }     /* light green */
+    .crr { color: #87CEFA; }       /* sky blue */
+    .bowler { color: #FF6347; }    /* tomato red */
+    .lastover { color: #FFA500; }  /* orange */
   </style>
 </head>
 <body>
-  <iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pubhtml?gid=658195036&single=true&range=A1" frameborder="0"></iframe>
+  <div id="overlayBar">
+    <div class="section batsman" id="batsmen">Loading...</div>
+    <div class="section score" id="matchScore"></div>
+    <div class="section crr" id="crr"></div>
+    <div class="section bowler" id="bowler"></div>
+    <div class="section lastover" id="lastOver"></div>
+  </div>
+
+  <script>
+    const csvLink = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?gid=658195036&single=true&output=csv";
+
+    async function loadData() {
+      try {
+        const resp = await fetch(csvLink + "&cacheBust=" + Date.now());
+        const text = await resp.text();
+        const rows = text.trim().split("\n");
+
+        let scoreLine = rows[1] || "";
+        if (!scoreLine) {
+          document.getElementById("batsmen").innerText = "No score yet";
+          return;
+        }
+
+        // Example row format:
+        // Player1* 55(16) | Player2 15(3) || RAPTORS 50/4 (4) vs ALL STARS | CRR: 2.50 | Shahid 2-3.5 | Last Over: 0 1 0 0 W wd 1
+        let parts = scoreLine.split("|").map(p => p.trim());
+
+        // Assign to sections
+        let batsmen = (parts[0] || "") + " | " + (parts[1] || "");
+        let matchScore = parts[2] || "";
+        let crr = parts[3] || "";
+        let bowler = parts[4] || "";
+        let lastOver = parts[5] || "";
+
+        document.getElementById("batsmen").innerText = batsmen;
+        document.getElementById("matchScore").innerText = matchScore;
+        document.getElementById("crr").innerText = crr;
+        document.getElementById("bowler").innerText = bowler;
+        document.getElementById("lastOver").innerText = lastOver;
+
+      } catch (err) {
+        console.error("Fetch error:", err);
+        document.getElementById("batsmen").innerText = "Error loading score";
+      }
+    }
+
+    loadData();
+    setInterval(loadData, 5000); // refresh every 5 seconds
+  </script>
 </body>
 </html>
