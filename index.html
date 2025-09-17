@@ -46,8 +46,8 @@
       font-size: 18px;
       font-weight: normal;
       text-align: center;
+      flex: 1;
       color: #ffffff;
-      margin-top: 2px;
     }
 
     .highlight {
@@ -72,22 +72,23 @@
 </head>
 <body>
   <div class="scorebar">
+    <!-- Row 1 -->
     <div class="row">
       <div id="player1" class="highlight"></div>
-      <div style="flex:1; text-align:center;">
-        <div id="scoreline" class="scoreline"></div>
-        <div id="crr" class="crr"></div>
-      </div>
+      <div id="scoreline" class="scoreline"></div>
       <div id="bowlerstats" class="highlight"></div>
     </div>
+
+    <!-- Row 2 -->
     <div class="row">
       <div id="player2" class="highlight"></div>
+      <div id="crr" class="crr"></div>
       <div id="lastover"></div>
     </div>
   </div>
 
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
+    const sheetURL = "YOUR_GOOGLE_SHEETS_CSV_LINK";
 
     function formatBall(ball) {
       const b = ball.trim().toLowerCase();
@@ -127,4 +128,3 @@
   </script>
 </body>
 </html>
-
