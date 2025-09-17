@@ -99,7 +99,10 @@ async function fetchScore() {
   try {
     const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
     const text = await res.text();
-    const json = JSON.parse(text.substr(47).slice(0, -2));
+
+    // Safely extract JSON between first "{" and last "}"
+    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const json = JSON.parse(jsonStr);
 
     const row = json.table.rows[0].c.map(cell => cell ? cell.v : "");
 
@@ -127,6 +130,7 @@ async function fetchScore() {
 
   } catch(e){
     console.error("Error fetching score:", e);
+    document.getElementById("scoreline").innerText = "⚠ No update from sheet";
   }
 }
 
