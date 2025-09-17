@@ -4,79 +4,27 @@
 <meta charset="UTF-8">
 <title>Cricket Score Overlay</title>
 <style>
-  body { 
-    margin:0; 
-    background: rgba(0,0,0,0); 
-    font-family: Arial, sans-serif; 
-    color: white; 
-  }
-
+  body {margin:0; background:transparent; font-family: Arial, sans-serif; color:white;}
   .scorebar {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(30,30,30,0.5));
-    border-radius: 20px;
-    padding: 12px 15px;
-    box-sizing: border-box;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.6), 0 0 15px rgba(255,255,255,0.2);
+    position: fixed; top:10px; left:50%; transform:translateX(-50%);
+    width:90%; background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(30,30,30,0.5));
+    border-radius:20px; padding:12px 15px; box-sizing:border-box;
+    box-shadow:0 4px 12px rgba(0,0,0,0.6), 0 0 15px rgba(255,255,255,0.2);
     backdrop-filter: blur(4px);
   }
-
-  .row {
-    display:grid;
-    grid-template-columns:1.5fr 3fr 1.5fr;
-    align-items:center;
-    margin:5px 0;
-  }
-
-  .left { text-align:left; }
-  .center { text-align:center; }
-  .right { text-align:right; }
-
-  .player { font-size: 26px; font-weight:bold; text-shadow:1px 1px 2px black; }
-  .bowler { font-size: 24px; font-weight:bold; text-shadow:1px 1px 2px black; }
-
-  .scoreline { 
-    font-size:30px; 
-    font-weight:bold; 
-    text-shadow:2px 2px 6px black;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .team1 { color: #ffd700; font-weight:bold; }
-  .team2 { color: #1e90ff; font-weight:bold; }
-  .vs    { color: #ffffff; font-weight:bold; }
-
-  .crr { font-size:18px; font-style:italic; color:white; text-shadow:1px 1px 2px black; }
-
-  .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; color:white; text-align:center; }
-  .dot { background: gray; }
-  .run { background: green; }
-  .four { background: blue; }
-  .six { background: gold; color: black; }
-  .wicket { background: red; }
-  .wide { background: orange; }
-
-  @keyframes flashAnim {
-    0% { background-color: rgba(255,255,255,0.8); }
-    50% { background-color: rgba(255,255,255,0); }
-    100% { background-color: rgba(255,255,255,0); }
-  }
-  .flash { animation: flashAnim 0.8s ease forwards; }
-
-  @keyframes bounce {
-    0% { transform: translateY(0); }
-    30% { transform: translateY(-8px); }
-    50% { transform: translateY(0); }
-    70% { transform: translateY(-4px); }
-    100% { transform: translateY(0); }
-  }
-  .bounce { animation: bounce 0.5s ease forwards; }
+  .row {display:grid; grid-template-columns:1.5fr 3fr 1.5fr; align-items:center; margin:5px 0;}
+  .left {text-align:left;} .center {text-align:center;} .right {text-align:right;}
+  .player {font-size:26px; font-weight:bold; text-shadow:1px 1px 2px black;}
+  .bowler {font-size:24px; font-weight:bold; text-shadow:1px 1px 2px black;}
+  .scoreline {font-size:30px; font-weight:bold; text-shadow:2px 2px 6px black; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .team1 {color:#ffd700; font-weight:bold;} .team2 {color:#1e90ff; font-weight:bold;} .vs {color:#fff; font-weight:bold;}
+  .crr {font-size:18px; font-style:italic; color:white; text-shadow:1px 1px 2px black;}
+  .ball {display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; color:white; text-align:center;}
+  .dot {background: gray;} .run {background: green;} .four {background: blue;} .six {background: gold; color:black;} .wicket {background: red;} .wide {background: orange;}
+  @keyframes flashAnim {0%{background:rgba(255,255,255,0.8);} 50%{background:rgba(255,255,255,0);} 100%{background:rgba(255,255,255,0);}}
+  .flash {animation: flashAnim 0.8s ease forwards;}
+  @keyframes bounce {0%{transform:translateY(0);} 30%{transform:translateY(-8px);} 50%{transform:translateY(0);} 70%{transform:translateY(-4px);} 100%{transform:translateY(0);}}
+  .bounce {animation: bounce 0.5s ease forwards;}
 </style>
 </head>
 <body>
@@ -95,7 +43,8 @@
 </div>
 
 <script>
-const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
+// Your sheet JSON endpoint
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/gviz/tq?tqx=out:json&gid=658195036";
 
 let lastBalls = [];
 let lastBowler = "";
@@ -148,31 +97,28 @@ function colorScoreline(text){
 
 async function fetchScore() {
   try {
-    const urlWithNoCache = sheetURL + "&t=" + Date.now();
-    const res = await fetch(urlWithNoCache, { cache: "no-store" });
+    const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
     const text = await res.text();
-    
-    const line = text.trim().split("\n")[0]; // only 1 row in sheet
-    if (!line) return;
+    const json = JSON.parse(text.substr(47).slice(0, -2));
 
-    const parts = line.split("|").map(p => p.trim());
+    const row = json.table.rows[0].c.map(cell => cell ? cell.v : "");
 
-    document.getElementById("player1").innerText = parts[0] || "";
-    document.getElementById("player2").innerText = parts[1] || "";
-    document.getElementById("scoreline").innerHTML = colorScoreline(parts[2] || "");
+    document.getElementById("player1").innerText = row[0] || "";
+    document.getElementById("player2").innerText = row[1] || "";
+    document.getElementById("scoreline").innerHTML = colorScoreline(row[2] || "");
 
     const bowlerEl = document.getElementById("bowler");
-    bowlerEl.innerText = parts[4] || "";
-    flashIfChanged(bowlerEl, parts[4] || "", lastBowler);
-    lastBowler = parts[4] || "";
+    bowlerEl.innerText = row[4] || "";
+    flashIfChanged(bowlerEl, row[4] || "", lastBowler);
+    lastBowler = row[4] || "";
 
     const crrEl = document.getElementById("crr");
-    crrEl.innerText = parts[3] || "";
-    flashIfChanged(crrEl, parts[3] || "", lastCRR);
-    lastCRR = parts[3] || "";
+    crrEl.innerText = row[3] || "";
+    flashIfChanged(crrEl, row[3] || "", lastCRR);
+    lastCRR = row[3] || "";
 
-    if(parts[5]){
-      const ballsText = parts[5].replace(/^This Over:\s*/i,"");
+    if(row[5]){
+      const ballsText = row[5].replace(/^This Over:\s*/i,"");
       const balls = ballsText.split(" ");
       flashNewBalls(document.getElementById("lastover"), balls);
     }
