@@ -21,6 +21,7 @@
       font-weight: bold;
       padding: 8px;
       text-align: center;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -32,11 +33,14 @@
 
     async function fetchScore() {
       try {
-        const response = await fetch(sheetUrl + "&t=" + new Date().getTime()); // no cache
-        const data = await response.text();
-        const lines = data.trim().split("\n");
-        const lastLine = lines[lines.length - 1]; // use last row
-        document.getElementById("scorebar").innerText = lastLine;
+        const response = await fetch(sheetUrl + "&t=" + new Date().getTime()); // bypass cache
+        const text = await response.text();
+        const rows = text.trim().split("\n").map(r => r.split(","));
+
+        // ✅ pick first row, first cell (where you enter formatted score string)
+        const scoreText = rows[0][0] || "No score yet";
+
+        document.getElementById("scorebar").innerText = scoreText;
       } catch (err) {
         document.getElementById("scorebar").innerText = "Error loading score";
       }
