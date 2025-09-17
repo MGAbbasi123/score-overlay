@@ -100,9 +100,11 @@ async function fetchScore() {
     const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
     const text = await res.text();
 
-    // Safely extract JSON between first "{" and last "}"
-    const jsonStr = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    const json = JSON.parse(jsonStr);
+    // Match the JSON inside google.visualization.Query.setResponse(...)
+    const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
+    if (!match) throw new Error("Unexpected response format from Google Sheets");
+
+    const json = JSON.parse(match[1]);
 
     const row = json.table.rows[0].c.map(cell => cell ? cell.v : "");
 
@@ -120,15 +122,18 @@ async function fetchScore() {
     flashIfChanged(crrEl, row[3] || "", lastCRR);
     lastCRR = row[3] || "";
 
-    if(row[5]){
-      const ballsText = row[5].replace(/^This Over:\s*/i,"");
+    if (row[5]) {
+      const ballsText = row[5].replace(/^This Over:\s*/i, "");
       const balls = ballsText.split(" ");
       flashNewBalls(document.getElementById("lastover"), balls);
     }
 
-    adjustFontSize(document.getElementById("scoreline"), document.getElementById("scoreline").parentElement.offsetWidth);
+    adjustFontSize(
+      document.getElementById("scoreline"),
+      document.getElementById("scoreline").parentElement.offsetWidth
+    );
 
-  } catch(e){
+  } catch (e) {
     console.error("Error fetching score:", e);
     document.getElementById("scoreline").innerText = "⚠ No update from sheet";
   }
