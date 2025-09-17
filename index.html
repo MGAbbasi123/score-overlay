@@ -4,15 +4,58 @@
 <meta charset="UTF-8">
 <title>Cricket Score Overlay</title>
 <style>
-  body { margin:0; background:rgba(0,0,0,0); font-family:Arial,sans-serif; color:white; }
-  .scorebar { position:fixed; top:0; left:0; width:100%; background: rgba(0,0,0,0.7); padding:8px 15px; box-sizing:border-box; }
-  .row { display:grid; grid-template-columns:1fr 2fr 1fr; align-items:center; margin:2px 0; }
-  .left { text-align:left; }
-  .center { text-align:center; }
-  .right { text-align:right; }
-  .scoreline { font-size:26px; font-weight:bold; color:#ffdd00; text-shadow:2px 2px 4px black; }
-  .crr { font-size:18px; font-style:italic; }
-  .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; }
+  body { 
+    margin:0; 
+    background: rgba(0,0,0,0); 
+    font-family: Arial, sans-serif; 
+    color: white; 
+  }
+
+  .scorebar {
+    position: fixed;
+    top: 10px; /* a little gap from top */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    background: rgba(0,0,0,0.6); /* semi-transparent black */
+    border-radius: 15px; /* rounded corners */
+    padding: 10px 15px;
+    box-sizing: border-box;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1.5fr 3fr 1.5fr; /* Left | Center | Right */
+    align-items: center;
+    margin: 3px 0;
+  }
+
+  .left { text-align: left; }
+  .center { text-align: center; }
+  .right { text-align: right; }
+
+  .scoreline { 
+    font-size: 26px; 
+    font-weight: bold; 
+    color: #ffdd00; 
+    text-shadow: 2px 2px 4px black; 
+  }
+
+  .crr { 
+    font-size: 18px; 
+    font-style: italic; 
+    color: #ffffff; 
+  }
+
+  .ball { 
+    display:inline-block; 
+    margin:0 2px; 
+    padding:3px 6px; 
+    border-radius:50%; 
+    font-weight:bold; 
+    font-size:14px; 
+  }
   .dot { background: gray; }
   .run { background: green; }
   .four { background: blue; }
@@ -40,7 +83,7 @@
 </div>
 
 <script>
-const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
+const sheetURL = "YOUR_GOOGLE_SHEETS_CSV_LINK";
 
 function formatBall(ball) {
   const b = ball.trim().toLowerCase();
@@ -62,7 +105,6 @@ async function fetchScore() {
 
     const parts = line.split("|").map(p => p.trim());
 
-    // Assign fields
     document.getElementById("player1").innerText = parts[0] || "";
     document.getElementById("player2").innerText = parts[1] || "";
     document.getElementById("scoreline").innerText = parts[2] || "";
@@ -70,7 +112,6 @@ async function fetchScore() {
     document.getElementById("bowler").innerText = parts[4] || "";
 
     if(parts[5]){
-      // Remove "This Over:" from sheet text
       const ballsText = parts[5].replace(/^This Over:\s*/i,"");
       const balls = ballsText.split(" ").map(formatBall).join(" ");
       document.getElementById("lastover").innerHTML = "This Over: " + balls;
