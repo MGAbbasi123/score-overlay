@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cricket Overlay (Styled, robust)</title>
+<title>Cricket Overlay (fixed parser)</title>
 <style>
   :root{
     --bg: rgba(0,0,0,0.78);
@@ -11,65 +11,22 @@
     --white: #FFFFFF;
   }
   html,body{height:100%;width:100%;margin:0;padding:0;background:transparent;font-family:Arial,Helvetica,sans-serif;pointer-events:none;}
-  /* container fixed to bottom, column holds top row and last-over strip */
-  #container{
-    position:fixed;
-    bottom:0;
-    left:0;
-    right:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:6px;
-    z-index:9999;
-  }
-
-  .topRow{
-    width:100%;
-    max-width:1400px;
-    box-sizing:border-box;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    background:var(--bg);
-    color:var(--white);
-    padding:8px 12px;
-    border-radius:8px;
-    font-weight:700;
-    font-size:calc(14px + 0.6vw);
-  }
-
-  .players{flex:2;text-align:left; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding-right:12px;}
-  .teams  {flex:1;text-align:center; font-size:1.05em; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding:0 10px;}
-  .right  {flex:1;text-align:right; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding-left:12px; font-weight:600;}
-
-  .bottomRow{
-    width:100%;
-    max-width:1400px;
-    background:var(--muted);
-    color:var(--white);
-    padding:6px 10px;
-    border-radius:0 0 8px 8px;
-    text-align:center;
-    font-size:calc(12px + 0.4vw);
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  /* colored tokens for last over */
-  .ball { display:inline-block; margin:0 6px; padding:4px 8px; border-radius:6px; font-weight:700; min-width:22px; text-align:center;}
-  .run    { background: rgba(0,200,0,0.12); color: #00ff66; }
-  .wicket { background: rgba(255,50,50,0.12); color: #ff6b6b; }
-  .dot    { background: rgba(255,255,255,0.04); color: #d0d0d0; }
-  .extra  { background: rgba(0,150,255,0.08); color: #8ed0ff; }
-
-  /* small-screen adjustments */
+  #container{position:fixed;bottom:0;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:9999;}
+  .topRow{width:100%;max-width:1400px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;background:var(--bg);color:var(--white);padding:8px 12px;border-radius:8px;font-weight:700;font-size:calc(14px + 0.6vw);}
+  .players{flex:2;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-right:12px;}
+  .teams{flex:1;text-align:center;font-size:1.05em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 10px;}
+  .right{flex:1;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding-left:12px;font-weight:600;}
+  .bottomRow{width:100%;max-width:1400px;background:var(--muted);color:var(--white);padding:6px 10px;border-radius:0 0 8px 8px;text-align:center;font-size:calc(12px + 0.4vw);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ball{display:inline-block;margin:0 6px;padding:4px 8px;border-radius:6px;font-weight:700;min-width:22px;text-align:center;}
+  .run{background:rgba(0,200,0,0.12);color:#00ff66;}
+  .wicket{background:rgba(255,50,50,0.12);color:#ff6b6b;}
+  .dot{background:rgba(255,255,255,0.04);color:#d0d0d0;}
+  .extra{background:rgba(0,150,255,0.08);color:#8ed0ff;}
   @media (max-width:420px){
-    .topRow { font-size: 14px; padding:6px; }
-    .players, .teams, .right { padding: 0 6px; }
-    .bottomRow { font-size: 13px; padding:6px; }
-    .ball { margin:0 4px; padding:3px 6px; min-width:18px; }
+    .topRow{font-size:14px;padding:6px;}
+    .players,.teams,.right{padding:0 6px;}
+    .bottomRow{font-size:13px;padding:6px;}
+    .ball{margin:0 4px;padding:3px 6px;min-width:18px;}
   }
 </style>
 </head>
@@ -84,49 +41,69 @@
   </div>
 
 <script>
-/* ---------- CONFIG ---------- */
+/* ------------------- CONFIG ------------------- */
 const csvLink = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?gid=658195036&single=true&output=csv";
+/* refresh interval (ms) */
+const REFRESH_MS = 4000;
 
-/* ---------- small CSV row parser that respects quotes ---------- */
+/* ---------- Small robust CSV row parser (handles quotes) ---------- */
 function parseCSVRow(line){
   const cells = [];
   let cur = "", inQuotes = false;
   for(let i=0;i<line.length;i++){
     const ch = line[i];
-    if(ch === '"' ){
-      // handle double quote escaping i.e. "" inside quoted field
+    if(ch === '"'){
       if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; continue; }
       inQuotes = !inQuotes;
       continue;
     }
-    if(ch === ',' && !inQuotes){
-      cells.push(cur);
-      cur = "";
-      continue;
-    }
+    if(ch === ',' && !inQuotes){ cells.push(cur); cur=""; continue; }
     cur += ch;
   }
   cells.push(cur);
   return cells.map(c => c.trim());
 }
 
-/* find the most-likely data-line in CSV text */
-function findDataLine(lines){
-  // Skip blank lines; look for line containing 'Last Over' or 'vs' or 'Player' or '|' which indicates formatted string
-  for(let i=0;i<lines.length;i++){
-    const l = lines[i].trim();
-    if(!l) continue;
-    const low = l.toLowerCase();
-    if(low.includes('last over') || low.includes(' vs ') || low.includes('player') || low.includes('|')) return l;
+/* pick the best candidate cell from CSV text */
+function pickCandidateCell(csvText){
+  const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l !== "");
+  if(lines.length === 0) return "";
+  // iterate rows and cells, prefer a cell with '|' or 'Last Over' or ' vs '
+  for(let r=0;r<lines.length;r++){
+    const parsed = parseCSVRow(lines[r]);
+    for(let c=0;c<parsed.length;c++){
+      const cell = parsed[c] || "";
+      const low = cell.toLowerCase();
+      if(low.includes('last over') || low.includes(' vs ') || cell.includes('|') || /player/i.test(cell)) return cell;
+    }
   }
-  // fallback: return last non-empty
-  for(let i=lines.length-1;i>=0;i--){
-    if(lines[i].trim()) return lines[i].trim();
-  }
+  // fallback: use last non-empty cell from last row
+  const lastParsed = parseCSVRow(lines[lines.length-1]);
+  for(let i=0;i<lastParsed.length;i++) if(lastParsed[i].trim()) return lastParsed[i].trim();
   return "";
 }
 
-/* color tokens for last over */
+/* extract and remove labeled segment (like Last Over or CRR) */
+function extractLabel(full, labelRegex){
+  const m = full.match(labelRegex);
+  if(!m) return {found:null, remaining:full};
+  const start = m.index;
+  // find next '|' after start (if any)
+  const after = full.slice(start);
+  const nextPipe = after.indexOf("|");
+  let segment = "";
+  let remaining = "";
+  if(nextPipe >= 0){
+    segment = after.slice(0, nextPipe);
+    remaining = full.slice(0, start) + full.slice(start + nextPipe + 1);
+  } else {
+    segment = after;
+    remaining = full.slice(0, start);
+  }
+  return {found: segment.trim(), remaining: remaining.trim()};
+}
+
+/* color token for last over */
 function colorBallToken(token){
   const t = token.trim();
   if(!t) return '';
@@ -134,154 +111,115 @@ function colorBallToken(token){
   if(/^(wd|nb)$/i.test(t)) return `<span class="ball extra">${t}</span>`;
   if(/^0$/.test(t)) return `<span class="ball dot">${t}</span>`;
   if(/^\d+$/.test(t)) return `<span class="ball run">${t}</span>`;
-  // fallback
   return `<span class="ball">${t}</span>`;
 }
 
-/* parse the formatted line into parts robustly:
-   expected general shape:
-   [batsmen-left] || [teams and others separated by |]
-   example:
-   "Player1* 60(20) | Player2 15(3) || RAPTORS 50/4 (4) vs ALL STARS | CRR: 2.50 | Shahid 2-3.5 | Last Over: 0 1 0 0 W wd 1"
-*/
-function parseOverlayLine(fullText){
+/* parse the full overlay string into parts */
+function parseOverlayText(fullText){
   if(!fullText) return {};
-  // normalize consecutive pipes
-  // split on '||' first
-  let leftPart = "", rest = "";
-  if(fullText.includes("||")){
-    const arr = fullText.split("||");
-    leftPart = arr[0].trim();
-    rest = arr.slice(1).join("||").trim();
+  let text = fullText.trim();
+
+  // 1) Extract Last Over (explicit label) if present
+  const lo = extractLabel(text, /last\s*over\s*[:\-]*/i);
+  let lastOver = "";
+  if(lo.found){ lastOver = lo.found.replace(/last\s*over\s*[:\-]*/i,'').trim(); text = lo.remaining; }
+
+  // 2) Extract CRR (allow 'CRR:' or 'CRR' or 'Run Rate')
+  const crr = extractLabel(text, /(crr|run\s*rate|rrr)\s*[:\-]*/i);
+  let crrText = "";
+  if(crr.found){ crrText = crr.found.trim(); text = crr.remaining; }
+
+  // 3) Now split left vs rest using '||' if present, otherwise first '|'
+  let left = "", rest = "";
+  if(text.includes("||")){
+    const idx = text.indexOf("||");
+    left = text.slice(0, idx).trim();
+    rest = text.slice(idx+2).trim();
+  } else if(text.includes("|")){
+    // split at first '|' — left likely holds batsmen (maybe single '|')
+    const idx = text.indexOf("|");
+    left = text.slice(0, idx).trim();
+    rest = text.slice(idx+1).trim();
   } else {
-    // if no double-bar, fallback: split on first '|' for players vs rest
-    const idx = fullText.indexOf("|");
-    if(idx >= 0){
-      leftPart = fullText.slice(0, idx).trim();
-      rest = fullText.slice(idx+1).trim();
-    } else {
-      leftPart = fullText.trim();
+    left = "";
+    rest = text;
+  }
+
+  // players: left might contain a single '|' between two batsmen; keep as-is
+  const players = left.replace(/\s*\|\s*/g, " | ");
+
+  // restParts — split by single '|'
+  const restParts = rest ? rest.split("|").map(p => p.trim()).filter(Boolean) : [];
+
+  // teams: find first restPart containing ' vs ' or a score pattern like '50/4'
+  let teams = "";
+  for(let i=0;i<restParts.length;i++){
+    if(/\bvs\b/i.test(restParts[i]) || /\d+\/\d+/.test(restParts[i])){
+      teams = restParts.splice(i,1)[0];
+      break;
     }
   }
+  // if not found, maybe first part is teams
+  if(!teams && restParts.length) {
+    teams = restParts.shift();
+  }
 
-  // players: leftPart may itself contain a single '|' between two batsmen
-  const playerParts = leftPart.split("|").map(s => s.trim()).filter(Boolean);
-
-  // restParts: split by single '|' and trim, filter empties
-  const restParts = rest ? rest.split("|").map(s => s.trim()).filter(Boolean) : [];
-
-  // find last-over entry
-  let lastOverPartIndex = restParts.findIndex(p => /last\s*over/i.test(p));
-  let lastOverPart = null;
-  if(lastOverPartIndex >= 0){
-    lastOverPart = restParts.splice(lastOverPartIndex,1)[0];
-  } else {
-    // sometimes last over appears as part of end; try last element if contains numbers and spaces
-    const cand = restParts[restParts.length-1];
-    if(cand && /\b(0|1|2|3|4|6|W|wd|nb)\b/i.test(cand)) {
-      // treat last as lastOver if it contains many tokens separated by space
-      lastOverPart = restParts.pop();
+  // bowler: find part that looks like bowler (contains name + digits or has a dot for overs)
+  let bowler = "";
+  for(let i=0;i<restParts.length;i++){
+    if(/[\d]+\.\d+/.test(restParts[i]) || /-\d+/.test(restParts[i]) || /\b\w+\s+\d/.test(restParts[i])){
+      bowler = restParts.splice(i,1)[0];
+      break;
     }
   }
+  // fallback: if still empty pick first remaining
+  if(!bowler && restParts.length) bowler = restParts.shift();
 
-  // teams is usually the first rest part
-  const teamsPart = restParts.length ? restParts[0] : "";
-
-  // CRR might contain 'CRR' or 'Run Rate' etc
-  let crrPartIndex = restParts.findIndex(p => /crr|run rate|rrr/i.test(p));
-  let crrPart = "";
-  if(crrPartIndex >= 0) {
-    crrPart = restParts.splice(crrPartIndex,1)[0];
-  } else {
-    // maybe it's the second part
-    if(restParts.length > 1) { crrPart = restParts[1]; restParts.splice(1,1); }
-  }
-
-  // bowler: take the first remaining after teams/crr (prefer parts having hyphen like 2-3.5 or digits)
-  let bowlerPart = "";
-  if(restParts.length){
-    // try to find part that looks like bowler stats: has a space and contains '-' or digits
-    const idx = restParts.findIndex(p => /\d+\-|\d+\.\d+|\d+\s*-\s*\d+/.test(p));
-    if(idx >= 0) bowlerPart = restParts.splice(idx,1)[0];
-    else bowlerPart = restParts.slice(1).join(" | ") || restParts[0];
-  }
-
+  // finalize
   return {
-    players: playerParts.join(" | "),
-    teams: teamsPart,
-    crr: crrPart,
-    bowler: bowlerPart,
-    lastOver: lastOverPart
+    players: players || "",
+    teams: teams || "",
+    crr: crrText || "",
+    bowler: bowler || "",
+    lastOver: lastOver || ""
   };
 }
 
-/* main fetch and render */
+/* main loader */
 async function loadOverlay(){
   try {
-    const resp = await fetch(csvLink + "&t=" + Date.now());
-    const text = await resp.text();
-    // split into lines and find the best data line
-    const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(l=>l!=='');
-    if(rawLines.length === 0){
-      document.getElementById('players').innerText = 'No data';
+    const res = await fetch(csvLink + "&t=" + Date.now(), {cache: "no-store"});
+    const text = await res.text();
+    const candidate = pickCandidateCell(text);
+    if(!candidate){
+      document.getElementById('players').innerText = 'No score found';
       document.getElementById('teams').innerText = '';
       document.getElementById('rightBox').innerText = '';
       document.getElementById('lastover').innerText = '';
       return;
     }
+    // remove outer quotes if any
+    const cellText = candidate.replace(/^"(.*)"$/, '$1').trim();
+    const parsed = parseOverlayText(cellText);
 
-    // choose candidate CSV data line - prefer a line that contains 'Last Over' or 'vs' or '|'
-    let candidate = findDataLine(rawLines);
-
-    // candidate may be a CSV raw row containing quoted fields separated by commas,
-    // parse it into cells and find the first non-empty cell that likely contains our single-line overlay
-    const cells = parseCSVRow(candidate);
-    // if first cell is just a header like "Header1", try to look at next actual data line from rawLines
-    let cellText = "";
-    // try first cell, if it contains pipe or 'Last Over' or 'vs' choose it; else scan other cells
-    for(let i=0;i<cells.length;i++){
-      const c = cells[i] || "";
-      if(/\|/.test(c) || /last\s*over/i.test(c) || /vs/i.test(c) || /player/i.test(c)){
-        cellText = c;
-        break;
-      }
-    }
-    if(!cellText){
-      // if nothing matched in cells, try to find a line in rawLines that contains '|' and use full raw line
-      const alt = rawLines.find(l => /\|/.test(l) || /last\s*over/i.test(l) || / vs /i.test(l));
-      cellText = alt || cells[0] || rawLines[rawLines.length-1];
-    }
-
-    // final trimmed text
-    const fullText = (cellText||"").replace(/(^"|"$)/g,'').trim();
-
-    // parse into sections
-    const parsed = parseOverlayLine(fullText);
-
-    // render players, teams, rightBox (CRR + bowler), and colored last over
     document.getElementById('players').innerText = parsed.players || '—';
-    let teamText = parsed.teams || '—';
-    // if CRR contains label, ensure we show crr separately in rightBox
-    const rightSegments = [];
-    if(parsed.crr) rightSegments.push(parsed.crr);
-    if(parsed.bowler) rightSegments.push(parsed.bowler);
-    document.getElementById('teams').innerText = teamText;
-    document.getElementById('rightBox').innerText = rightSegments.join(' | ');
+    // teams may include CRR accidentally; ensure crr separated
+    document.getElementById('teams').innerText = parsed.teams || '—';
+    const rightParts = [];
+    if(parsed.crr) rightParts.push(parsed.crr);
+    if(parsed.bowler) rightParts.push(parsed.bowler);
+    document.getElementById('rightBox').innerText = rightParts.join(' | ');
 
-    // last over -> split tokens and color them
     if(parsed.lastOver){
-      // remove leading label if present
-      let lo = parsed.lastOver.replace(/Last\s*Over\s*:\s*/i,'').trim();
-      // tokens separated by spaces or commas
-      const tokens = lo.split(/[\s,]+/).filter(t=>t!=='');
+      const tokens = parsed.lastOver.replace(/Last\s*Over\s*[:\-]*/i,'').split(/[\s,]+/).filter(Boolean);
       const colored = tokens.map(colorBallToken).join(' ');
       document.getElementById('lastover').innerHTML = 'Last Over: ' + colored;
     } else {
       document.getElementById('lastover').innerText = '';
     }
 
-  } catch(err){
-    console.error('overlay load error', err);
+  } catch (err) {
+    console.error('overlay error', err);
     document.getElementById('players').innerText = 'Error loading';
     document.getElementById('teams').innerText = '';
     document.getElementById('rightBox').innerText = '';
@@ -289,9 +227,8 @@ async function loadOverlay(){
   }
 }
 
-/* start updating */
 loadOverlay();
-setInterval(loadOverlay, 5000);
+setInterval(loadOverlay, REFRESH_MS);
 </script>
 </body>
 </html>
