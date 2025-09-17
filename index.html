@@ -15,39 +15,70 @@
       bottom: 0;
       left: 0;
       width: 100%;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       color: white;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: bold;
-      padding: 8px;
-      text-align: center;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section {
+      margin: 0 10px;
       white-space: nowrap;
+    }
+    .players { flex: 2; text-align: left; }
+    .teams   { flex: 2; text-align: center; }
+    .bowler  { flex: 1; text-align: right; }
+    .lastover {
+      width: 100%;
+      background: rgba(255,255,255,0.1);
+      font-size: 18px;
+      padding: 4px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div id="scorebar">Loading...</div>
+  <div id="scorebar">
+    <div class="section players" id="players">Loading players...</div>
+    <div class="section teams" id="teams">Loading teams...</div>
+    <div class="section bowler" id="bowler">Loading bowler...</div>
+  </div>
+  <div class="lastover" id="lastover">Loading last over...</div>
 
   <script>
     const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?gid=658195036&single=true&output=csv";
 
     async function fetchScore() {
       try {
-        const response = await fetch(sheetUrl + "&t=" + new Date().getTime()); // bypass cache
+        const response = await fetch(sheetUrl + "&t=" + new Date().getTime()); // avoid cache
         const text = await response.text();
         const rows = text.trim().split("\n").map(r => r.split(","));
 
-        // ✅ pick first row, first cell (where you enter formatted score string)
-        const scoreText = rows[0][0] || "No score yet";
+        // Assuming your A1 cell contains the formatted score line:
+        // "Player1* 60(20) | Player2 15(3) || RAPTORS 50/4 (4) vs ALL STARS | CRR: 2.50 | Shahid 2-3.5 | Last Over: 0 1 0 0 W wd 1"
+        const line = rows[0][0] || "";
 
-        document.getElementById("scorebar").innerText = scoreText;
+        // Split by |
+        const parts = line.split("|").map(p => p.trim());
+
+        // Map to overlay sections
+        document.getElementById("players").innerText = parts[0] + " | " + (parts[1] || "");
+        document.getElementById("teams").innerText   = parts[2] || "";
+        document.getElementById("bowler").innerText  = (parts[3] || "") + " " + (parts[4] || "");
+        document.getElementById("lastover").innerText = parts[5] ? "Last Over: " + parts[5].replace("Last Over:", "").trim() : "";
       } catch (err) {
-        document.getElementById("scorebar").innerText = "Error loading score";
+        document.getElementById("players").innerText = "Error loading";
+        document.getElementById("teams").innerText = "";
+        document.getElementById("bowler").innerText = "";
+        document.getElementById("lastover").innerText = "";
       }
     }
 
     fetchScore();
-    setInterval(fetchScore, 5000); // refresh every 5 sec
+    setInterval(fetchScore, 5000);
   </script>
 </body>
 </html>
