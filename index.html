@@ -25,10 +25,10 @@
   }
 
   .row {
-    display: grid;
-    grid-template-columns: 1.5fr 3fr 1.5fr;
-    align-items: center;
-    margin: 3px 0;
+    display:grid;
+    grid-template-columns:1.5fr 3fr 1.5fr;
+    align-items:center;
+    margin:3px 0;
   }
 
   .left { text-align:left; }
@@ -36,7 +36,7 @@
   .right { text-align:right; }
 
   .scoreline { 
-    font-size: 26px; 
+    font-size:26px; 
     font-weight:bold; 
     color:#ffdd00; 
     text-shadow:2px 2px 4px black;
@@ -45,20 +45,12 @@
     text-overflow: ellipsis;
   }
 
-  .crr { 
-    font-size:18px; 
-    font-style:italic; 
-    color:white; 
-  }
+  .team1 { color: #ffd700; font-weight:bold; } /* RAPTORS yellow/gold */
+  .team2 { color: #1e90ff; font-weight:bold; } /* ALL STARS blue */
 
-  .ball { 
-    display:inline-block; 
-    margin:0 2px; 
-    padding:3px 6px; 
-    border-radius:50%; 
-    font-weight:bold; 
-    font-size:14px; 
-  }
+  .crr { font-size:18px; font-style:italic; color:white; }
+
+  .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; }
   .dot { background: gray; }
   .run { background: green; }
   .four { background: blue; }
@@ -86,7 +78,7 @@
 </div>
 
 <script>
-const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv"; // Replace with your published CSV URL
 
 function formatBall(ball) {
   const b = ball.trim().toLowerCase();
@@ -108,9 +100,19 @@ function adjustFontSize(el, maxWidth) {
   }
 }
 
+function colorScoreline(text){
+  const parts = text.split(/vs/i);
+  if(parts.length === 2){
+    return `<span class="team1">${parts[0].trim()}</span> vs <span class="team2">${parts[1].trim()}</span>`;
+  }
+  return text; // fallback
+}
+
 async function fetchScore() {
   try {
-    const res = await fetch(sheetURL);
+    // Append random query param to prevent caching
+    const urlWithNoCache = sheetURL + "?nocache=" + new Date().getTime();
+    const res = await fetch(urlWithNoCache);
     const text = await res.text();
     const line = text.trim().split("\n")[0];
     if (!line) return;
@@ -119,7 +121,7 @@ async function fetchScore() {
 
     document.getElementById("player1").innerText = parts[0] || "";
     document.getElementById("player2").innerText = parts[1] || "";
-    document.getElementById("scoreline").innerText = parts[2] || "";
+    document.getElementById("scoreline").innerHTML = colorScoreline(parts[2] || "");
     document.getElementById("crr").innerText = parts[3] || "";
     document.getElementById("bowler").innerText = parts[4] || "";
 
@@ -129,17 +131,17 @@ async function fetchScore() {
       document.getElementById("lastover").innerHTML = "This Over: " + balls;
     }
 
-    // Adjust scoreline font to fit center column
-    const scorelineEl = document.getElementById("scoreline");
-    adjustFontSize(scorelineEl, scorelineEl.parentElement.offsetWidth);
+    // Adjust font size dynamically
+    adjustFontSize(document.getElementById("scoreline"), document.getElementById("scoreline").parentElement.offsetWidth);
 
   } catch(e){
     console.error("Error fetching score:", e);
   }
 }
 
+// Fetch every 3 seconds
 fetchScore();
-setInterval(fetchScore, 3000); // refresh every 3 seconds
+setInterval(fetchScore, 3000);
 </script>
 
 </body>
