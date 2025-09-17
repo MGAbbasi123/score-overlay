@@ -12,7 +12,7 @@
     }
     #scorebar {
       position: fixed;
-      bottom: 0;
+      bottom: 30px;
       left: 0;
       width: 100%;
       background: rgba(0, 0, 0, 0.75);
@@ -24,20 +24,26 @@
       justify-content: space-between;
       align-items: center;
     }
-    .section {
-      margin: 0 10px;
-      white-space: nowrap;
-    }
+    .section { margin: 0 10px; white-space: nowrap; }
     .players { flex: 2; text-align: left; }
     .teams   { flex: 2; text-align: center; }
     .bowler  { flex: 1; text-align: right; }
+
     .lastover {
+      position: fixed;
+      bottom: 0;
+      left: 0;
       width: 100%;
       background: rgba(255,255,255,0.1);
-      font-size: 18px;
+      font-size: 20px;
       padding: 4px;
       text-align: center;
+      font-weight: bold;
     }
+    .run    { color: #00ff00; } /* green */
+    .wicket { color: #ff3333; } /* red */
+    .dot    { color: #cccccc; } /* grey */
+    .extra  { color: #00bfff; } /* blue for wd, nb */
   </style>
 </head>
 <body>
@@ -51,24 +57,33 @@
   <script>
     const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?gid=658195036&single=true&output=csv";
 
+    function colorBall(ball) {
+      ball = ball.trim();
+      if (ball === "W") return `<span class="wicket">${ball}</span>`;
+      if (ball === "0") return `<span class="dot">${ball}</span>`;
+      if (["wd","nb"].includes(ball.toLowerCase())) return `<span class="extra">${ball}</span>`;
+      if (!isNaN(ball)) return `<span class="run">${ball}</span>`;
+      return ball; // fallback
+    }
+
     async function fetchScore() {
       try {
         const response = await fetch(sheetUrl + "&t=" + new Date().getTime()); // avoid cache
         const text = await response.text();
         const rows = text.trim().split("\n").map(r => r.split(","));
 
-        // Assuming your A1 cell contains the formatted score line:
-        // "Player1* 60(20) | Player2 15(3) || RAPTORS 50/4 (4) vs ALL STARS | CRR: 2.50 | Shahid 2-3.5 | Last Over: 0 1 0 0 W wd 1"
         const line = rows[0][0] || "";
-
-        // Split by |
         const parts = line.split("|").map(p => p.trim());
 
-        // Map to overlay sections
         document.getElementById("players").innerText = parts[0] + " | " + (parts[1] || "");
         document.getElementById("teams").innerText   = parts[2] || "";
         document.getElementById("bowler").innerText  = (parts[3] || "") + " " + (parts[4] || "");
-        document.getElementById("lastover").innerText = parts[5] ? "Last Over: " + parts[5].replace("Last Over:", "").trim() : "";
+
+        if (parts[5]) {
+          let overText = parts[5].replace("Last Over:", "").trim().split(" ");
+          overText = overText.map(colorBall).join(" ");
+          document.getElementById("lastover").innerHTML = "Last Over: " + overText;
+        }
       } catch (err) {
         document.getElementById("players").innerText = "Error loading";
         document.getElementById("teams").innerText = "";
