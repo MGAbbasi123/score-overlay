@@ -76,14 +76,14 @@
     <div class="row">
       <div id="player1" class="highlight"></div>
       <div id="scoreline" class="scoreline"></div>
-      <div id="bowlerstats" class="highlight"></div>
+      <div id="bowler" class="highlight"></div>
     </div>
 
     <!-- Row 2 -->
     <div class="row">
       <div id="player2" class="highlight"></div>
       <div id="crr" class="crr"></div>
-      <div id="lastover"></div>
+      <div id="thisover"></div>
     </div>
   </div>
 
@@ -107,16 +107,16 @@
         const text = await res.text();
         const parts = text.trim().split("|");
 
-        // Format: Player1 | Player2 | Scoreline | CRR: X | BowlerStats | LastOver
+        // Format: Player1 | Player2 | Scoreline | CRR | Bowler | ThisOver
         document.getElementById("player1").innerText   = parts[0] || "";
         document.getElementById("player2").innerText   = parts[1] || "";
         document.getElementById("scoreline").innerText = parts[2] || "";
         document.getElementById("crr").innerText       = parts[3] || "";
-        document.getElementById("bowlerstats").innerText = parts[4] || "";
+        document.getElementById("bowler").innerText    = parts[4] || "";
 
         if (parts[5]) {
           const balls = parts[5].split(" ").map(formatBall).join(" ");
-          document.getElementById("lastover").innerHTML = "This Over: " + balls;
+          document.getElementById("thisover").innerHTML = "This Over: " + balls;
         }
       } catch (e) {
         console.error("Error fetching score:", e);
