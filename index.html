@@ -13,12 +13,12 @@
 
   .scorebar {
     position: fixed;
-    top: 10px; /* a little gap from top */
+    top: 10px;
     left: 50%;
     transform: translateX(-50%);
     width: 90%;
-    background: rgba(0,0,0,0.6); /* semi-transparent black */
-    border-radius: 15px; /* rounded corners */
+    background: rgba(0,0,0,0.6);
+    border-radius: 15px;
     padding: 10px 15px;
     box-sizing: border-box;
     box-shadow: 0 4px 8px rgba(0,0,0,0.5);
@@ -26,26 +26,29 @@
 
   .row {
     display: grid;
-    grid-template-columns: 1.5fr 3fr 1.5fr; /* Left | Center | Right */
+    grid-template-columns: 1.5fr 3fr 1.5fr;
     align-items: center;
     margin: 3px 0;
   }
 
-  .left { text-align: left; }
-  .center { text-align: center; }
-  .right { text-align: right; }
+  .left { text-align:left; }
+  .center { text-align:center; }
+  .right { text-align:right; }
 
   .scoreline { 
     font-size: 26px; 
-    font-weight: bold; 
-    color: #ffdd00; 
-    text-shadow: 2px 2px 4px black; 
+    font-weight:bold; 
+    color:#ffdd00; 
+    text-shadow:2px 2px 4px black;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .crr { 
-    font-size: 18px; 
-    font-style: italic; 
-    color: #ffffff; 
+    font-size:18px; 
+    font-style:italic; 
+    color:white; 
   }
 
   .ball { 
@@ -96,6 +99,15 @@ function formatBall(ball) {
   return `<span class="ball">${ball}</span>`;
 }
 
+function adjustFontSize(el, maxWidth) {
+  let fontSize = 26;
+  el.style.fontSize = fontSize + "px";
+  while (el.scrollWidth > maxWidth && fontSize > 14) {
+    fontSize -= 1;
+    el.style.fontSize = fontSize + "px";
+  }
+}
+
 async function fetchScore() {
   try {
     const res = await fetch(sheetURL);
@@ -117,15 +129,18 @@ async function fetchScore() {
       document.getElementById("lastover").innerHTML = "This Over: " + balls;
     }
 
+    // Adjust scoreline font to fit center column
+    const scorelineEl = document.getElementById("scoreline");
+    adjustFontSize(scorelineEl, scorelineEl.parentElement.offsetWidth);
+
   } catch(e){
     console.error("Error fetching score:", e);
   }
 }
 
 fetchScore();
-setInterval(fetchScore, 5000);
+setInterval(fetchScore, 3000); // refresh every 3 seconds
 </script>
 
 </body>
 </html>
-
