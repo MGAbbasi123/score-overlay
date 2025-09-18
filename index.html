@@ -44,11 +44,10 @@
 </div>
 
 <script>
-// Google Sheet JSON endpoint
 const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
 
 let lastBalls = [];
-let lastValues = {}; // store last fetched values to avoid flashing old/new repeatedly
+let lastValues = {}; // store last fetched values to avoid flicker
 
 function formatBallClass(ball) {
   const b = ball.trim().toLowerCase();
@@ -106,38 +105,40 @@ async function fetchScore(){
 
     const json = JSON.parse(match[1]);
     const rows = json.table.rows;
+
+    // Map Key -> Value safely
     const data = {};
     rows.forEach(r=>{
-      if(r.c && r.c[0] && r.c[1]){
-        data[r.c[0].v.trim()] = r.c[1].v.trim();
-      }
+      const key = r.c[0] && r.c[0].v ? r.c[0].v.trim() : null;
+      const value = r.c[1] && r.c[1].v ? r.c[1].v.trim() : "";
+      if(key) data[key] = value;
     });
 
     // Update overlay
     const player1 = document.getElementById("player1");
     player1.innerText = data["Player 1"] || "";
-    player1.classList.toggle("hidden",!data["Player 1"]);
+    player1.classList.toggle("hidden", !data["Player 1"]);
     flashIfChanged(player1,"Player 1",data["Player 1"]);
 
     const player2 = document.getElementById("player2");
     player2.innerText = data["Player 2"] || "";
-    player2.classList.toggle("hidden",!data["Player 2"]);
+    player2.classList.toggle("hidden", !data["Player 2"]);
     flashIfChanged(player2,"Player 2",data["Player 2"]);
 
     const scoreline = document.getElementById("scoreline");
-    scoreline.innerHTML = data["Ticker"]? colorScoreline(data["Ticker"]):"";
-    scoreline.classList.toggle("hidden",!data["Ticker"]);
-    adjustFontSize(scoreline,scoreline.parentElement.offsetWidth);
+    scoreline.innerHTML = data["Ticker"] ? colorScoreline(data["Ticker"]) : "";
+    scoreline.classList.toggle("hidden", !data["Ticker"]);
+    adjustFontSize(scoreline, scoreline.parentElement.offsetWidth);
     flashIfChanged(scoreline,"Ticker",data["Ticker"]);
 
     const crr = document.getElementById("crr");
-    crr.innerText = data["CRR"]? "CRR: "+data["CRR"] : "";
-    crr.classList.toggle("hidden",!data["CRR"]);
+    crr.innerText = data["CRR"] ? "CRR: " + data["CRR"] : "";
+    crr.classList.toggle("hidden", !data["CRR"]);
     flashIfChanged(crr,"CRR",data["CRR"]);
 
     const bowler = document.getElementById("bowler");
     bowler.innerText = data["Bowler"] || "";
-    bowler.classList.toggle("hidden",!data["Bowler"]);
+    bowler.classList.toggle("hidden", !data["Bowler"]);
     flashIfChanged(bowler,"Bowler",data["Bowler"]);
 
     if(data["This Over"]){
@@ -147,8 +148,8 @@ async function fetchScore(){
       document.getElementById("lastover").classList.add("hidden");
     }
 
-  }catch(e){
-    console.error("Error fetching score:",e);
+  } catch(e){
+    console.error("Error fetching score:", e);
     document.getElementById("scoreline").innerText="⚠ No update from sheet";
   }
 }
