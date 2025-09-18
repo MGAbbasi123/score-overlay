@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 8:37 -->
+<!-- 841 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -55,13 +55,12 @@ function parseData(json) {
   let cols = json.table.cols;
   let rows = json.table.rows;
 
-  // ✅ Extract Player 1, Player 2, Ticker from column[1].label
-  if (cols.length > 1 && cols[1].label && cols[1].label.includes("Value")) {
+  // ✅ Extract Player 1, Player 2, Ticker
+  if (cols.length > 1 && cols[1].label && cols[1].label.startsWith("Value")) {
     let label = cols[1].label.replace("Value", "").trim();
 
-    // Regex: Player 1 (any text) Player 2 (any text) then Ticker
-    // Assumption: Player 1 and Player 2 do not contain "vs"
-    let match = label.match(/^(.*?) (.*?) (.*vs.*)$/i);
+    // Capture player1, player2, then ticker
+    let match = label.match(/^(.*?\(\d+\)) (.*?\(\d+\)) (.*)$/);
     if (match) {
       data["Player 1"] = match[1].trim();
       data["Player 2"] = match[2].trim();
