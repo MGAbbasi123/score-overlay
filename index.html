@@ -25,14 +25,21 @@
     backdrop-filter: blur(4px);
   }
 
-  .row { margin:5px 0; }
+  .row {
+    display:grid;
+    grid-template-columns:1.5fr 3fr 1.5fr;
+    align-items:center;
+    margin:5px 0;
+  }
 
-  .key { font-weight:bold; margin-right:5px; }
-  .value { font-weight:normal; }
+  .left { text-align:left; }
+  .center { text-align:center; }
+  .right { text-align:right; }
 
-  .scoreline .team1 { color: #ffd700; font-weight:bold; }
-  .scoreline .team2 { color: #1e90ff; font-weight:bold; }
-  .scoreline .vs    { color: #ffffff; font-weight:bold; }
+  .player { font-size: 26px; font-weight:bold; text-shadow:1px 1px 2px black; }
+  .bowler { font-size: 24px; font-weight:bold; text-shadow:1px 1px 2px black; }
+  .scoreline { font-size:30px; font-weight:bold; text-shadow:2px 2px 6px black; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .crr { font-size:18px; font-style:italic; color:white; text-shadow:1px 1px 2px black; }
 
   .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; color:white; text-align:center; }
   .dot { background: gray; }
@@ -61,8 +68,20 @@
 </head>
 <body>
 
-<div class="scorebar" id="scorebar">
-  <!-- Dynamic content will go here -->
+<div class="scorebar">
+  <div class="row">
+    <div class="left player" id="player1">Loading...</div>
+    <div class="center scoreline" id="scoreline">Loading...</div>
+    <div class="right bowler" id="bowler">Loading...</div>
+  </div>
+  <div class="row">
+    <div class="left player" id="player2">Loading...</div>
+    <div class="center crr" id="crr">Loading...</div>
+    <div class="right" id="lastover">Loading...</div>
+  </div>
+
+  <!-- Container for extra keys -->
+  <div id="extraKeys"></div>
 </div>
 
 <script>
@@ -100,6 +119,15 @@ function flashIfChanged(el, key, newValue) {
   lastValues[key] = newValue;
 }
 
+function adjustFontSize(el, maxWidth) {
+  let fontSize = 30;
+  el.style.fontSize = fontSize + "px";
+  while (el.scrollWidth > maxWidth && fontSize > 14) {
+    fontSize -= 1;
+    el.style.fontSize = fontSize + "px";
+  }
+}
+
 function colorScoreline(text){
   const parts = text.split(/vs/i);
   if(parts.length === 2){
@@ -123,34 +151,63 @@ async function fetchScore() {
       }
     });
 
-    const container = document.getElementById("scorebar");
-    container.innerHTML = ""; // clear previous
-
-    for(const key in data){
-      const value = data[key];
-
-      const row = document.createElement("div");
-      row.className = "row";
-
-      if(key.toLowerCase() === "this over"){
-        const balls = value.split(" ");
-        const ballDiv = document.createElement("div");
-        flashNewBalls(ballDiv, balls);
-        row.appendChild(ballDiv);
-      } else {
-        const keySpan = document.createElement("span");
-        keySpan.className = "key";
-        keySpan.innerText = key + ": ";
-        const valueSpan = document.createElement("span");
-        valueSpan.className = "value";
-        valueSpan.innerHTML = key.toLowerCase() === "ticker" ? colorScoreline(value) : value;
-        flashIfChanged(valueSpan, key, value);
-        row.appendChild(keySpan);
-        row.appendChild(valueSpan);
-      }
-
-      container.appendChild(row);
+    // Update main grid
+    if(data["Player 1"]){
+      const el = document.getElementById("player1");
+      el.innerText = data["Player 1"];
+      flashIfChanged(el, "Player 1", data["Player 1"]);
     }
+    if(data["Player 2"]){
+      const el = document.getElementById("player2");
+      el.innerText = data["Player 2"];
+      flashIfChanged(el, "Player 2", data["Player 2"]);
+    }
+    if(data["Ticker"]){
+      const el = document.getElementById("scoreline");
+      el.innerHTML = colorScoreline(data["Ticker"]);
+      flashIfChanged(el, "Ticker", data["Ticker"]);
+      adjustFontSize(el, el.parentElement.offsetWidth);
+    }
+    if(data["CRR"]){
+      const el = document.getElementById("crr");
+      el.innerText = data["CRR"];
+      flashIfChanged(el, "CRR", data["CRR"]);
+    }
+    if(data["Bowler"]){
+      const el = document.getElementById("bowler");
+      el.innerText = data["Bowler"];
+      flashIfChanged(el, "Bowler", data["Bowler"]);
+    }
+    if(data["This Over"]){
+      const balls = data["This Over"].split(" ");
+      flashNewBalls(document.getElementById("lastover"), balls);
+    }
+
+    // Handle extra keys dynamically below main grid
+    const extraContainer = document.getElementById("extraKeys");
+    extraContainer.innerHTML = "";
+    Object.keys(data).forEach(key => {
+      if(!["Player 1","Player 2","Ticker","CRR","Bowler","This Over"].includes(key)){
+        const row = document.createElement("div");
+        row.className = "row";
+
+        const keyDiv = document.createElement("div");
+        keyDiv.className = "left key";
+        keyDiv.innerText = key + ":";
+
+        const valueDiv = document.createElement("div");
+        valueDiv.className = "center value";
+        valueDiv.style.gridColumn = "span 2";
+        valueDiv.innerText = data[key];
+
+        flashIfChanged(valueDiv, key, data[key]);
+        adjustFontSize(valueDiv, extraContainer.offsetWidth);
+
+        row.appendChild(keyDiv);
+        row.appendChild(valueDiv);
+        extraContainer.appendChild(row);
+      }
+    });
 
   } catch(e){
     console.error("Error fetching score:", e);
