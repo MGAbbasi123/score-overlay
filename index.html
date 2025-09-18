@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- MG 0232 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -42,7 +43,6 @@
 </div>
 
 <script>
-// Visualization API JSON endpoint
 const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
 
 let lastBalls = [];
@@ -80,24 +80,25 @@ async function fetchScore() {
 
     const json = JSON.parse(match[1]);
 
-    // Convert all rows to key-value object
+    // map all keys to their values
     const data = {};
-    json.table.rows.forEach(r => {
-      if (r.c && r.c[0] && r.c[0].v) {
-        const key = r.c[0].v.trim();
-        const value = (r.c[1] && r.c[1].v) ? r.c[1].v.trim() : "";
+    json.table.rows.forEach(row => {
+      if (row.c && row.c[0] && row.c[0].v) {
+        const key = row.c[0].v.trim();
+        const value = row.c[1] && row.c[1].v ? row.c[1].v.trim() : "";
         data[key] = value;
       }
     });
 
-    // Assign to DOM elements
+    // Assign values to overlay
     document.getElementById("player1").innerText = data["Player 1"] || "";
     document.getElementById("player2").innerText = data["Player 2"] || "";
-    document.getElementById("ticker").innerHTML  = data["Ticker"] ? data["Ticker"].replace(/vs/i, '<span class="vs">vs</span>') : "";
-    document.getElementById("crr").innerText     = data["CRR"] || "";
-    document.getElementById("bowler").innerText  = data["Bowler"] || "";
+    document.getElementById("ticker").innerHTML = data["Ticker"] 
+        ? data["Ticker"].replace(/vs/i, '<span class="vs">vs</span>') 
+        : "";
+    document.getElementById("crr").innerText = data["CRR"] || "";
+    document.getElementById("bowler").innerText = data["Bowler"] || "";
 
-    // Handle "This Over"
     const ballsText = data["This Over"] || "";
     const balls = ballsText.split(" ").filter(b => b);
     flashNewBalls(document.getElementById("lastover"), balls);
