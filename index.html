@@ -2,15 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cricket Score Overlay - Fixed Sync Issue</title>
+<title>Cricket Score Overlay</title>
 <style>
   body { 
     margin:0; 
     background: rgba(0,0,0,0); 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    font-family: Arial, sans-serif; 
     color: white; 
-    overflow: hidden;
   }
 
   .scorebar {
@@ -19,100 +17,34 @@
     left: 50%;
     transform: translateX(-50%);
     width: 90%;
-    max-width: 1000px;
-    background: linear-gradient(to right, rgba(0,0,0,0.8), rgba(30,30,30,0.6));
+    background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(30,30,30,0.5));
     border-radius: 20px;
-    padding: 12px 20px;
+    padding: 12px 15px;
     box-sizing: border-box;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.7), 0 0 15px rgba(255,255,255,0.15);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255,255,255,0.1);
-    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6), 0 0 15px rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
   }
 
-  .row {
-    display: grid;
-    grid-template-columns: 1.5fr 3fr 1.5fr;
-    align-items: center;
-    margin: 8px 0;
-  }
+  .row { margin:5px 0; }
 
-  .left { text-align:left; }
-  .center { text-align:center; }
-  .right { text-align:right; }
+  .key { font-weight:bold; margin-right:5px; }
+  .value { font-weight:normal; }
 
-  .player { 
-    font-size: 22px; 
-    font-weight: bold; 
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .bowler { 
-    font-size: 20px; 
-    font-weight: bold; 
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+  .scoreline .team1 { color: #ffd700; font-weight:bold; }
+  .scoreline .team2 { color: #1e90ff; font-weight:bold; }
+  .scoreline .vs    { color: #ffffff; font-weight:bold; }
 
-  .scoreline { 
-    font-size: 26px; 
-    font-weight: bold; 
-    text-shadow: 2px 2px 6px rgba(0,0,0,0.9);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 0 10px;
-  }
-
-  .team1 { color: #ffd700; font-weight:bold; }
-  .team2 { color: #1e90ff; font-weight:bold; }
-  .vs    { color: #ffffff; font-weight:bold; }
-
-  .crr { 
-    font-size: 18px; 
-    font-style: italic; 
-    color: white; 
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-    padding: 4px 8px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 10px;
-    display: inline-block;
-  }
-
-  .ball { 
-    display: inline-block; 
-    margin: 0 2px; 
-    padding: 4px 8px; 
-    border-radius: 50%; 
-    font-weight: bold; 
-    font-size: 14px; 
-    color: white; 
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  }
-  .dot { background: #6c757d; }
-  .run { background: #28a745; }
-  .four { background: #007bff; }
-  .six { background: #ffc107; color: black; }
-  .wicket { background: #dc3545; }
-  .wide { background: #fd7e14; }
-  .noball { background: #e83e8c; }
-
-  .last-over-container {
-    background: rgba(0,0,0,0.25);
-    padding: 6px 12px;
-    border-radius: 15px;
-    display: inline-block;
-  }
+  .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; color:white; text-align:center; }
+  .dot { background: gray; }
+  .run { background: green; }
+  .four { background: blue; }
+  .six { background: gold; color: black; }
+  .wicket { background: red; }
+  .wide { background: orange; }
 
   @keyframes flashAnim {
     0% { background-color: rgba(255,255,255,0.8); }
-    50% { background-color: rgba(255,255,255,0.2); }
+    50% { background-color: rgba(255,255,255,0); }
     100% { background-color: rgba(255,255,255,0); }
   }
   .flash { animation: flashAnim 0.8s ease forwards; }
@@ -125,300 +57,109 @@
     100% { transform: translateY(0); }
   }
   .bounce { animation: bounce 0.5s ease forwards; }
-
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-  }
-  .pulse { animation: pulse 0.5s ease; }
-
-  .status-indicator {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 8px;
-  }
-  .status-live {
-    background: #28a745;
-    box-shadow: 0 0 8px #28a745;
-  }
-  .status-offline {
-    background: #dc3545;
-  }
-
-  .last-update {
-    position: absolute;
-    bottom: 5px;
-    right: 15px;
-    font-size: 10px;
-    color: rgba(255,255,255,0.6);
-  }
-  
-  .cache-warning {
-    position: absolute;
-    top: 5px;
-    right: 15px;
-    font-size: 10px;
-    color: #ff6b6b;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 2px 6px;
-    border-radius: 4px;
-    display: none;
-  }
 </style>
 </head>
 <body>
 
-<div class="scorebar">
-  <div class="cache-warning" id="cache-warning">Cache Issue Detected</div>
-  <div class="row">
-    <div class="left player" id="player1">Loading...</div>
-    <div class="center scoreline" id="scoreline">
-      <span class="status-indicator status-live" id="status-indicator"></span>
-      Loading...
-    </div>
-    <div class="right bowler" id="bowler">Loading...</div>
-  </div>
-  <div class="row">
-    <div class="left player" id="player2">Loading...</div>
-    <div class="center crr" id="crr">Loading...</div>
-    <div class="right">
-      <div class="last-over-container" id="lastover">This Over: - - - - - -</div>
-    </div>
-  </div>
-  <div class="last-update" id="last-update">Last update: --:--:--</div>
+<div class="scorebar" id="scorebar">
+  <!-- Dynamic content will go here -->
 </div>
 
 <script>
-// Configuration
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
-const REFRESH_INTERVAL = 2000; // 2 seconds to avoid overloading
+const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
 
-// State variables
+let lastValues = {};
 let lastBalls = [];
-let lastBowler = "";
-let lastCRR = "";
-let lastPlayer1 = "";
-let lastPlayer2 = "";
-let lastScoreline = "";
-let updateCount = 0;
-let cacheIssueDetected = false;
-let lastDataHash = "";
 
-// Generate a more robust cache buster
-function generateCacheBuster() {
-  return `&t=${Date.now()}&r=${Math.random().toString(36).substring(2, 15)}`;
-}
-
-// Create a hash of the data to detect changes
-function createDataHash(data) {
-  return Object.values(data).join('|');
-}
-
-// Format ball display class
 function formatBallClass(ball) {
   const b = ball.trim().toLowerCase();
-  if (b === "w" || b === "wicket") return "ball wicket";
-  if (b === "0" || b === "dot") return "ball dot";
-  if (b === "wd" || b === "wide") return "ball wide";
-  if (b === "nb" || b === "noball") return "ball noball";
-  if (b === "4" || b === "four") return "ball four";
-  if (b === "6" || b === "six") return "ball six";
+  if (b === "w") return "ball wicket";
+  if (b === "0") return "ball dot";
+  if (b === "wd") return "ball wide";
+  if (b === "4") return "ball four";
+  if (b === "6") return "ball six";
   if (!isNaN(b)) return "ball run";
   return "ball";
 }
 
-// Update the last over display with animation for new balls
 function flashNewBalls(el, newBalls) {
   const htmlBalls = newBalls.map((ball, i) => {
     const isNew = lastBalls[i] !== ball;
     const ballClass = formatBallClass(ball);
     return `<span class="${ballClass}${isNew ? ' bounce' : ''}">${ball}</span>`;
   }).join(" ");
-  
   el.innerHTML = "This Over: " + htmlBalls;
   lastBalls = [...newBalls];
 }
 
-// Flash animation for changed values
-function flashIfChanged(el, newValue, lastValue) {
-  if (newValue !== lastValue) {
+function flashIfChanged(el, key, newValue) {
+  if(lastValues[key] !== newValue) {
     el.classList.add("flash");
     setTimeout(() => el.classList.remove("flash"), 800);
-    return true;
   }
-  return false;
+  lastValues[key] = newValue;
 }
 
-// Adjust font size to fit container
-function adjustFontSize(el, maxWidth) {
-  let fontSize = 26;
-  el.style.fontSize = fontSize + "px";
-  while (el.scrollWidth > maxWidth && fontSize > 14) {
-    fontSize -= 1;
-    el.style.fontSize = fontSize + "px";
-  }
-}
-
-// Add team colors to scoreline
-function colorScoreline(text) {
+function colorScoreline(text){
   const parts = text.split(/vs/i);
-  if (parts.length === 2) {
+  if(parts.length === 2){
     return `<span class="team1">${parts[0].trim()}</span> <span class="vs">vs</span> <span class="team2">${parts[1].trim()}</span>`;
   }
   return text;
 }
 
-// Parse CSV data and extract key-value pairs
-function parseCSVData(text) {
-  const lines = text.trim().split('\n');
-  const data = {};
-  
-  lines.forEach(line => {
-    // More robust parsing that handles commas in values
-    const firstComma = line.indexOf(',');
-    if (firstComma > 0) {
-      const key = line.substring(0, firstComma).trim().toLowerCase();
-      const value = line.substring(firstComma + 1).trim();
-      if (key && value) {
-        data[key] = value;
-      }
-    }
-  });
-  
-  return data;
-}
-
-// Update the display with new data
-function updateDisplay(data) {
-  const dataHash = createDataHash(data);
-  
-  // Check if data is different from the last update
-  if (dataHash === lastDataHash) {
-    // No changes, just update the timestamp
-    const now = new Date();
-    const timeString = now.toLocaleTimeString();
-    document.getElementById("last-update").textContent = `Last update: ${timeString}`;
-    return;
-  }
-  
-  lastDataHash = dataHash;
-  
-  // Update player 1
-  const player1El = document.getElementById("player1");
-  const player1Value = data["player 1"] || "";
-  const player1Changed = flashIfChanged(player1El, player1Value, lastPlayer1);
-  player1El.innerText = player1Value;
-  lastPlayer1 = player1Value;
-  
-  // Update player 2
-  const player2El = document.getElementById("player2");
-  const player2Value = data["player 2"] || "";
-  const player2Changed = flashIfChanged(player2El, player2Value, lastPlayer2);
-  player2El.innerText = player2Value;
-  lastPlayer2 = player2Value;
-  
-  // Update scoreline
-  const scorelineEl = document.getElementById("scoreline");
-  const scorelineValue = data["ticker"] || "";
-  const scorelineChanged = flashIfChanged(scorelineEl, scorelineValue, lastScoreline);
-  scorelineEl.innerHTML = colorScoreline(scorelineValue);
-  lastScoreline = scorelineValue;
-  
-  // Update bowler
-  const bowlerEl = document.getElementById("bowler");
-  const bowlerValue = data["bowler"] || "";
-  const bowlerChanged = flashIfChanged(bowlerEl, bowlerValue, lastBowler);
-  bowlerEl.innerText = bowlerValue;
-  lastBowler = bowlerValue;
-  
-  // Update CRR
-  const crrEl = document.getElementById("crr");
-  const crrValue = data["crr"] ? `CRR: ${data["crr"]}` : "";
-  const crrChanged = flashIfChanged(crrEl, crrValue, lastCRR);
-  crrEl.innerText = crrValue;
-  lastCRR = crrValue;
-  
-  // Update last over
-  if (data["this over"]) {
-    const balls = data["this over"].split(" ");
-    flashNewBalls(document.getElementById("lastover"), balls);
-  }
-  
-  // Adjust font size if needed
-  adjustFontSize(scorelineEl, scorelineEl.parentElement.offsetWidth);
-  
-  // Update last update time
-  const now = new Date();
-  const timeString = now.toLocaleTimeString();
-  document.getElementById("last-update").textContent = `Last update: ${timeString}`;
-  
-  // Pulse animation to indicate activity
-  document.getElementById("status-indicator").classList.add("pulse");
-  setTimeout(() => {
-    document.getElementById("status-indicator").classList.remove("pulse");
-  }, 500);
-  
-  updateCount++;
-  
-  // If we detected a cache issue previously but now have good data, hide the warning
-  if (cacheIssueDetected) {
-    document.getElementById("cache-warning").style.display = 'none';
-    cacheIssueDetected = false;
-  }
-}
-
-// Fetch score data from Google Sheets
 async function fetchScore() {
   try {
-    const urlWithNoCache = `${SHEET_URL}${generateCacheBuster()}`;
-    
-    // Use fetch with no-cache directives
-    const res = await fetch(urlWithNoCache, {
-      method: 'GET',
-      cache: 'no-cache',
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+    const urlWithNoCache = sheetURL + "&nocache=" + Date.now();
+    const res = await fetch(urlWithNoCache);
+    const text = await res.text();
+    const lines = text.trim().split("\n");
+
+    const data = {};
+    lines.forEach(line => {
+      const [key, ...rest] = line.split(",");
+      if(key && rest.length){
+        data[key.trim()] = rest.join(",").trim();
       }
     });
-    
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
+
+    const container = document.getElementById("scorebar");
+    container.innerHTML = ""; // clear previous
+
+    for(const key in data){
+      const value = data[key];
+
+      const row = document.createElement("div");
+      row.className = "row";
+
+      if(key.toLowerCase() === "this over"){
+        const balls = value.split(" ");
+        const ballDiv = document.createElement("div");
+        flashNewBalls(ballDiv, balls);
+        row.appendChild(ballDiv);
+      } else {
+        const keySpan = document.createElement("span");
+        keySpan.className = "key";
+        keySpan.innerText = key + ": ";
+        const valueSpan = document.createElement("span");
+        valueSpan.className = "value";
+        valueSpan.innerHTML = key.toLowerCase() === "ticker" ? colorScoreline(value) : value;
+        flashIfChanged(valueSpan, key, value);
+        row.appendChild(keySpan);
+        row.appendChild(valueSpan);
+      }
+
+      container.appendChild(row);
     }
-    
-    const text = await res.text();
-    
-    if (!text.trim()) {
-      throw new Error("Empty response from server");
-    }
-    
-    const data = parseCSVData(text);
-    updateDisplay(data);
-    
-  } catch (e) {
+
+  } catch(e){
     console.error("Error fetching score:", e);
-    document.getElementById("status-indicator").className = "status-indicator status-offline";
-    
-    // Show cache warning if this isn't the first error
-    if (updateCount > 0) {
-      document.getElementById("cache-warning").style.display = 'block';
-      cacheIssueDetected = true;
-    }
   }
 }
 
-// Initialize and start periodic updates
-function init() {
-  fetchScore();
-  setInterval(fetchScore, REFRESH_INTERVAL);
-}
-
-// Start when page loads
-window.addEventListener('load', init);
+fetchScore();
+setInterval(fetchScore, 3000);
 </script>
+
 </body>
 </html>
