@@ -1,162 +1,558 @@
 <!DOCTYPE html>
+<!-- 434 -->
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Cricket Score Overlay</title>
-<style>
-  body { margin:0; background:transparent; font-family: Arial, sans-serif; color:white; }
-  .scorebar {
-    position: fixed; top:10px; left:50%; transform:translateX(-50%);
-    width:90%; background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(30,30,30,0.5));
-    border-radius:20px; padding:12px 15px; box-sizing:border-box;
-    box-shadow:0 4px 12px rgba(0,0,0,0.6), 0 0 15px rgba(255,255,255,0.2);
-    backdrop-filter: blur(4px);
-  }
-  .row { display:grid; grid-template-columns:1.5fr 3fr 1.5fr; align-items:center; margin:5px 0; }
-  .left { text-align:left; } .center { text-align:center; } .right { text-align:right; }
-  .player { font-size:26px; font-weight:bold; text-shadow:1px 1px 2px black; }
-  .bowler { font-size:24px; font-weight:bold; text-shadow:1px 1px 2px black; }
-  .scoreline { font-size:30px; font-weight:bold; text-shadow:2px 2px 6px black; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .team1 { color:#ffd700; font-weight:bold; } .team2 { color:#1e90ff; font-weight:bold; } .vs { color:#ffffff; font-weight:bold; }
-  .crr { font-size:18px; font-style:italic; color:white; text-shadow:1px 1px 2px black; }
-  .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; color:white; text-align:center; }
-  .dot { background: gray; } .run { background: green; } .four { background: blue; } .six { background: gold; color:black; } .wicket { background: red; } .wide { background: orange; }
-  @keyframes flashAnim { 0%{ background:rgba(255,255,255,0.8); } 50%{ background:rgba(255,255,255,0); } 100%{ background:rgba(255,255,255,0); } }
-  .flash { animation: flashAnim 0.8s ease forwards; }
-  @keyframes bounce { 0%{ transform:translateY(0); } 30%{ transform:translateY(-8px); } 50%{ transform:translateY(0); } 70%{ transform:translateY(-4px); } 100%{ transform:translateY(0); } }
-  .bounce { animation: bounce 0.5s ease forwards; }
-  .hidden { display:none; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Score Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ccc;
+        }
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .instructions {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        .instructions h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 10px;
+        }
+        .instructions ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 12px;
+            position: relative;
+            padding-left: 30px;
+        }
+        .instructions li:before {
+            content: "•";
+            color: #ffd700;
+            font-size: 1.5rem;
+            position: absolute;
+            left: 0;
+            top: -5px;
+        }
+        .scorebar {
+            width: 100%;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(30, 30, 30, 0.5));
+            border-radius: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 1.5fr 3fr 1.5fr;
+            align-items: center;
+            margin: 12px 0;
+        }
+        .left {
+            text-align: left;
+        }
+        .center {
+            text-align: center;
+        }
+        .right {
+            text-align: right;
+        }
+        .player {
+            font-size: 26px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+            color: #ffd700;
+        }
+        .bowler {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px black;
+            color: #1e90ff;
+        }
+        .scoreline {
+            font-size: 30px;
+            font-weight: bold;
+            text-shadow: 2px 2px 6px black;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .team1 {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .team2 {
+            color: #1e90ff;
+            font-weight: bold;
+        }
+        .vs {
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .crr {
+            font-size: 22px;
+            font-style: italic;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        .ball {
+            display: inline-block;
+            margin: 0 2px;
+            padding: 5px 10px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+            text-align: center;
+            min-width: 35px;
+        }
+        .dot {
+            background: #555;
+        }
+        .run {
+            background: #2ecc71;
+        }
+        .four {
+            background: #3498db;
+        }
+        .six {
+            background: #f1c40f;
+            color: black;
+        }
+        .wicket {
+            background: #e74c3c;
+        }
+        .wide {
+            background: #e67e22;
+        }
+        .noball {
+            background: #9b59b6;
+        }
+        @keyframes flashAnim {
+            0% {
+                background: rgba(255, 255, 255, 0.8);
+            }
+            50% {
+                background: rgba(255, 255, 255, 0);
+            }
+            100% {
+                background: rgba(255, 255, 255, 0);
+            }
+        }
+        .flash {
+            animation: flashAnim 0.8s ease forwards;
+        }
+        @keyframes bounce {
+            0% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-8px);
+            }
+            50% {
+                transform: translateY(0);
+            }
+            70% {
+                transform: translateY(-4px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+        .bounce {
+            animation: bounce 0.5s ease forwards;
+        }
+        .hidden {
+            display: none;
+        }
+        .code-container {
+            margin-top: 30px;
+            background: #1e1e1e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+        .code-header {
+            background: #2d2d2d;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+        .code-header h3 {
+            color: #ffd700;
+        }
+        .code-content {
+            padding: 20px;
+            overflow-x: auto;
+        }
+        pre {
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.5;
+            tab-size: 4;
+            -moz-tab-size: 4;
+        }
+        .comment {
+            color: #6a9955;
+        }
+        .keyword {
+            color: #569cd6;
+        }
+        .string {
+            color: #ce9178;
+        }
+        .function {
+            color: #dcdcaa;
+        }
+        .tag {
+            color: #569cd6;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+            .row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                text-align: center;
+            }
+            .left, .center, .right {
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Cricket Score Overlay</h1>
+            <p class="subtitle">Live streaming score display powered by Google Sheets</p>
+        </header>
 
-<div class="scorebar">
-  <div class="row">
-    <div class="left player" id="player1"></div>
-    <div class="center scoreline" id="scoreline"></div>
-    <div class="right bowler" id="bowler"></div>
-  </div>
-  <div class="row">
-    <div class="left player" id="player2"></div>
-    <div class="center crr" id="crr"></div>
-    <div class="right" id="lastover"></div>
-  </div>
-</div>
+        <div class="content">
+            <div class="instructions">
+                <h2>Implementation Instructions</h2>
+                <ul>
+                    <li>Create a Google Sheet with two columns: Key and Value</li>
+                    <li>Add the following keys: Player 1, Player 2, Ticker, CRR, Bowler, This Over</li>
+                    <li>Publish your sheet to the web</li>
+                    <li>Replace the sheetURL in the JavaScript code with your published sheet URL</li>
+                    <li>Add this HTML file to your streaming software as a browser source</li>
+                    <li>Update the Google Sheet during the match to update the overlay</li>
+                </ul>
+            </div>
 
-<script>
-// Visualization API JSON endpoint
-const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
+            <div class="scorebar">
+                <div class="row">
+                    <div class="left player" id="player1">Babar Azam* 78(62)</div>
+                    <div class="center scoreline" id="scoreline">
+                        <span class="team1">PAKISTAN 245/3</span> 
+                        <span class="vs">vs</span> 
+                        <span class="team2">INDIA</span>
+                    </div>
+                    <div class="right bowler" id="bowler">Bumrah 3-42</div>
+                </div>
+                <div class="row">
+                    <div class="left player" id="player2">Rizwan 62(58)</div>
+                    <div class="center crr" id="crr">CRR: 5.82</div>
+                    <div class="right" id="lastover">This Over: <span class="ball run">1</span> <span class="ball four">4</span> <span class="ball dot">0</span> <span class="ball six">6</span> <span class="ball wide">WD</span> <span class="ball wicket">W</span></div>
+                </div>
+            </div>
+        </div>
 
-let lastBalls = [];
+        <div class="code-container">
+            <div class="code-header">
+                <h3>JavaScript Implementation</h3>
+            </div>
+            <div class="code-content">
+                <pre><code><span class="comment">// Visualization API JSON endpoint</span>
+<span class="keyword">const</span> sheetURL = <span class="string">"https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036"</span>;
 
-function formatBallClass(ball) {
-  const b = ball.trim().toLowerCase();
-  if (b === "w") return "ball wicket";
-  if (b === "0") return "ball dot";
-  if (b === "wd" || b === "nb") return "ball wide"; // Adjusted for 'nb'
-  if (b === "4") return "ball four";
-  if (b === "6") return "ball six";
-  if (!isNaN(b)) return "ball run";
-  return "ball";
+<span class="keyword">let</span> lastBalls = [];
+
+<span class="keyword">function</span> <span class="function">formatBallClass</span>(ball) {
+    <span class="keyword">const</span> b = ball.trim().toLowerCase();
+    <span class="keyword">if</span> (b === <span class="string">"w"</span>) <span class="keyword">return</span> <span class="string">"ball wicket"</span>;
+    <span class="keyword">if</span> (b === <span class="string">"0"</span>) <span class="keyword">return</span> <span class="string">"ball dot"</span>;
+    <span class="keyword">if</span> (b === <span class="string">"wd"</span>) <span class="keyword">return</span> <span class="string">"ball wide"</span>;
+    <span class="keyword">if</span> (b === <span class="string">"4"</span>) <span class="keyword">return</span> <span class="string">"ball four"</span>;
+    <span class="keyword">if</span> (b === <span class="string">"6"</span>) <span class="keyword">return</span> <span class="string">"ball six"</span>;
+    <span class="keyword">if</span> (!isNaN(b)) <span class="keyword">return</span> <span class="string">"ball run"</span>;
+    <span class="keyword">return</span> <span class="string">"ball"</span>;
 }
 
-function flashNewBalls(el, newBalls) {
-  if (!newBalls.length) { el.classList.add("hidden"); return; }
-  el.classList.remove("hidden");
-  const htmlBalls = newBalls.map((ball, i) => {
-    const isNew = lastBalls[i] !== ball;
-    const ballClass = formatBallClass(ball);
-    return `<span class="${ballClass}${isNew ? ' bounce' : ''}">${ball}</span>`;
-  }).join(" ");
-  el.innerHTML = "This Over: " + htmlBalls;
-  lastBalls = [...newBalls];
+<span class="keyword">function</span> <span class="function">flashNewBalls</span>(el, newBalls) {
+    <span class="keyword">if</span> (!newBalls.length) { el.classList.add(<span class="string">"hidden"</span>); <span class="keyword">return</span>; }
+    el.classList.remove(<span class="string">"hidden"</span>);
+    <span class="keyword">const</span> htmlBalls = newBalls.map((ball, i) => {
+        <span class="keyword">const</span> isNew = lastBalls[i] !== ball;
+        <span class="keyword">const</span> ballClass = formatBallClass(ball);
+        <span class="keyword">return</span> `<span class="tag">&lt;span class=</span><span class="string">"${ballClass}${isNew ? ' bounce' : ''}"</span><span class="tag">&gt;</span>${ball}<span class="tag">&lt;/span&gt;</span>`;
+    }).join(<span class="string">" "</span>);
+    el.innerHTML = <span class="string">"This Over: "</span> + htmlBalls;
+    lastBalls = [...newBalls];
 }
 
-function adjustFontSize(el, maxWidth) {
-  if (!el.innerText.trim() && !el.innerHTML.trim()) { el.classList.add("hidden"); return; }
-  el.classList.remove("hidden");
-  let fontSize = 30;
-  el.style.fontSize = fontSize + "px";
-  while (el.scrollWidth > maxWidth && fontSize > 14) {
-    fontSize -= 1;
-    el.style.fontSize = fontSize + "px";
-  }
-}
-
-function colorScoreline(text) {
-  const parts = text.split(/vs/i);
-  if (parts.length === 2) {
-    return `<span class="team1">${parts[0].trim()}</span> <span class="vs">vs</span> <span class="team2">${parts[1].trim()}</span>`;
-  }
-  return text;
-}
-
-async function fetchScore() {
-  try {
-    const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
-    const text = await res.text();
-
-    console.log("Raw response from Google Sheets:", text); // Log raw response
-
-    const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
-    if (!match) {
-        console.error("Could not find JSON data in response. Check sheet sharing permissions.");
-        document.getElementById("scoreline").innerText = "⚠ Check sheet sharing";
-        return;
+<span class="keyword">function</span> <span class="function">adjustFontSize</span>(el, maxWidth) {
+    <span class="keyword">if</span> (!el.innerText.trim() && !el.innerHTML.trim()) { el.classList.add(<span class="string">"hidden"</span>); <span class="keyword">return</span>; }
+    el.classList.remove(<span class="string">"hidden"</span>);
+    <span class="keyword">let</span> fontSize = <span class="number">30</span>;
+    el.style.fontSize = fontSize + <span class="string">"px"</span>;
+    <span class="keyword">while</span> (el.scrollWidth > maxWidth && fontSize > <span class="number">14</span>) {
+        fontSize -= <span class="number">1</span>;
+        el.style.fontSize = fontSize + <span class="string">"px"</span>;
     }
-
-    const json = JSON.parse(match[1]);
-    const rows = json.table.rows;
-    const data = {};
-
-    console.log("Parsed JSON Rows:", rows); // Log parsed rows
-
-    rows.forEach(row => {
-      const key = row.c[0]?.v;
-      const value = row.c[1]?.v;
-      if (key && value !== undefined) {
-        data[key.trim()] = value;
-      }
-    });
-    
-    console.log("Final Data Object:", data); // Log final key-value pairs
-
-    // Assign values based on the new key-value format
-    const player1 = document.getElementById("player1");
-    player1.innerText = data["Player 1"] || "";
-    player1.classList.toggle("hidden", !data["Player 1"]);
-
-    const player2 = document.getElementById("player2");
-    player2.innerText = data["Player 2"] || "";
-    player2.classList.toggle("hidden", !data["Player 2"]);
-
-    const scoreline = document.getElementById("scoreline");
-    scoreline.innerHTML = data["Ticker"] ? colorScoreline(data["Ticker"]) : "";
-    scoreline.classList.toggle("hidden", !data["Ticker"]);
-
-    const crr = document.getElementById("crr");
-    crr.innerText = data["CRR"] ? `CRR: ${data["CRR"]}` : "";
-    crr.classList.toggle("hidden", !data["CRR"]);
-
-    const bowler = document.getElementById("bowler");
-    bowler.innerText = data["Bowler"] ? `Bowler: ${data["Bowler"]}` : "";
-    bowler.classList.toggle("hidden", !data["Bowler"]);
-
-    const lastOverText = data["This Over"] || "";
-    const balls = lastOverText.split(" ").filter(b => b);
-    flashNewBalls(document.getElementById("lastover"), balls);
-    
-    adjustFontSize(scoreline, scoreline.parentElement.offsetWidth);
-
-  } catch (e) {
-    console.error("Error fetching score:", e);
-    document.getElementById("scoreline").innerText = "⚠ No update from sheet";
-  }
 }
 
-fetchScore();
-setInterval(fetchScore, 1000);
-</script>
+<span class="keyword">function</span> <span class="function">colorScoreline</span>(text){
+    <span class="keyword">const</span> parts = text.split(/vs/i);
+    <span class="keyword">if</span> (parts.length === <span class="number">2</span>) {
+        <span class="keyword">return</span> `<span class="tag">&lt;span class=</span><span class="string">"team1"</span><span class="tag">&gt;</span>${parts[<span class="number">0</span>].trim()}<span class="tag">&lt;/span&gt;</span> <span class="tag">&lt;span class=</span><span class="string">"vs"</span><span class="tag">&gt;</span>vs<span class="tag">&lt;/span&gt;</span> <span class="tag">&lt;span class=</span><span class="string">"team2"</span><span class="tag">&gt;</span>${parts[<span class="number">1</span>].trim()}<span class="tag">&lt;/span&gt;</span>`;
+    }
+    <span class="keyword">return</span> text;
+}
 
+<span class="keyword">async function</span> <span class="function">fetchScore</span>() {
+    <span class="keyword">try</span> {
+        <span class="keyword">const</span> res = <span class="keyword">await</span> fetch(sheetURL + <span class="string">"&t="</span> + Date.now(), { cache: <span class="string">"no-store"</span> });
+        <span class="keyword">const</span> text = <span class="keyword">await</span> res.text();
+
+        <span class="keyword">const</span> match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
+        <span class="keyword">if</span> (!match) <span class="keyword">throw</span> <span class="keyword">new</span> Error(<span class="string">"Unexpected response format from Google Sheets"</span>);
+
+        <span class="keyword">const</span> json = JSON.parse(match[<span class="number">1</span>]);
+        <span class="keyword">const</span> rows = json.table.rows;
+        
+        <span class="comment">// Create a mapping object to store key-value pairs</span>
+        <span class="keyword">const</span> dataMap = {};
+        
+        <span class="comment">// Process each row to extract key-value pairs</span>
+        <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i < rows.length; i++) {
+            <span class="keyword">const</span> row = rows[i];
+            <span class="keyword">if</span> (row.c && row.c.length >= <span class="number">2</span> && row.c[<span class="number">0</span>] && row.c[<span class="number">0</span>].v && row.c[<span class="number">1</span>] && row.c[<span class="number">1</span>].v) {
+                <span class="keyword">const</span> key = row.c[<span class="number">0</span>].v.trim();
+                <span class="keyword">const</span> value = row.c[<span class="number">1</span>].v.trim();
+                dataMap[key] = value;
+            }
+        }
+        
+        <span class="comment">// Assign values based on keys (hide if empty)</span>
+        <span class="keyword">const</span> player1 = document.getElementById(<span class="string">"player1"</span>);
+        player1.innerText = dataMap[<span class="string">"Player 1"</span>] || <span class="string">""</span>;
+        player1.classList.toggle(<span class="string">"hidden"</span>, !dataMap[<span class="string">"Player 1"</span>]);
+
+        <span class="keyword">const</span> player2 = document.getElementById(<span class="string">"player2"</span>);
+        player2.innerText = dataMap[<span class="string">"Player 2"</span>] || <span class="string">""</span>;
+        player2.classList.toggle(<span class="string">"hidden"</span>, !dataMap[<span class="string">"Player 2"</span>]);
+
+        <span class="keyword">const</span> scoreline = document.getElementById(<span class="string">"scoreline"</span>);
+        scoreline.innerHTML = dataMap[<span class="string">"Ticker"</span>] ? colorScoreline(dataMap[<span class="string">"Ticker"</span>]) : <span class="string">""</span>;
+        scoreline.classList.toggle(<span class="string">"hidden"</span>, !dataMap[<span class="string">"Ticker"</span>]);
+
+        <span class="keyword">const</span> crr = document.getElementById(<span class="string">"crr"</span>);
+        crr.innerText = dataMap[<span class="string">"CRR"</span>] ? <span class="string">"CRR: "</span> + dataMap[<span class="string">"CRR"</span>] : <span class="string">""</span>;
+        crr.classList.toggle(<span class="string">"hidden"</span>, !dataMap[<span class="string">"CRR"</span>]);
+
+        <span class="keyword">const</span> bowler = document.getElementById(<span class="string">"bowler"</span>);
+        bowler.innerText = dataMap[<span class="string">"Bowler"</span>] || <span class="string">""</span>;
+        bowler.classList.toggle(<span class="string">"hidden"</span>, !dataMap[<span class="string">"Bowler"</span>]);
+
+        <span class="keyword">if</span> (dataMap[<span class="string">"This Over"</span>]) {
+            <span class="keyword">const</span> ballsText = dataMap[<span class="string">"This Over"</span>].replace(/^This Over:\s*/i, <span class="string">""</span>);
+            <span class="keyword">const</span> balls = ballsText.split(<span class="string">" "</span>).filter(b => b);
+            flashNewBalls(document.getElementById(<span class="string">"lastover"</span>), balls);
+        } <span class="keyword">else</span> {
+            document.getElementById(<span class="string">"lastover"</span>).classList.add(<span class="string">"hidden"</span>);
+        }
+
+        adjustFontSize(scoreline, scoreline.parentElement.offsetWidth);
+
+    } <span class="keyword">catch</span> (e) {
+        console.error(<span class="string">"Error fetching score:"</span>, e);
+        document.getElementById(<span class="string">"scoreline"</span>).innerText = <span class="string">"⚠ No update from sheet"</span>;
+    }
+}
+
+<span class="comment">// Initialize and set interval for updates</span>
+fetchScore();
+setInterval(fetchScore, <span class="number">3000</span>);</code></pre>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Cricket Score Overlay - Designed for Live Streaming | Updated for Key-Value Pair Google Sheets</p>
+        </div>
+    </div>
+
+    <script>
+        // Visualization API JSON endpoint
+        const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
+
+        let lastBalls = [];
+
+        function formatBallClass(ball) {
+            const b = ball.trim().toLowerCase();
+            if (b === "w") return "ball wicket";
+            if (b === "0") return "ball dot";
+            if (b === "wd") return "ball wide";
+            if (b === "4") return "ball four";
+            if (b === "6") return "ball six";
+            if (!isNaN(b)) return "ball run";
+            return "ball";
+        }
+
+        function flashNewBalls(el, newBalls) {
+            if (!newBalls.length) { el.classList.add("hidden"); return; }
+            el.classList.remove("hidden");
+            const htmlBalls = newBalls.map((ball, i) => {
+                const isNew = lastBalls[i] !== ball;
+                const ballClass = formatBallClass(ball);
+                return `<span class="${ballClass}${isNew ? ' bounce' : ''}">${ball}</span>`;
+            }).join(" ");
+            el.innerHTML = "This Over: " + htmlBalls;
+            lastBalls = [...newBalls];
+        }
+
+        function adjustFontSize(el, maxWidth) {
+            if (!el.innerText.trim() && !el.innerHTML.trim()) { el.classList.add("hidden"); return; }
+            el.classList.remove("hidden");
+            let fontSize = 30;
+            el.style.fontSize = fontSize + "px";
+            while (el.scrollWidth > maxWidth && fontSize > 14) {
+                fontSize -= 1;
+                el.style.fontSize = fontSize + "px";
+            }
+        }
+
+        function colorScoreline(text){
+            const parts = text.split(/vs/i);
+            if (parts.length === 2) {
+                return `<span class="team1">${parts[0].trim()}</span> <span class="vs">vs</span> <span class="team2">${parts[1].trim()}</span>`;
+            }
+            return text;
+        }
+
+        async function fetchScore() {
+            try {
+                const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
+                const text = await res.text();
+
+                const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
+                if (!match) throw new Error("Unexpected response format from Google Sheets");
+
+                const json = JSON.parse(match[1]);
+                const rows = json.table.rows;
+                
+                // Create a mapping object to store key-value pairs
+                const dataMap = {};
+                
+                // Process each row to extract key-value pairs
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (row.c && row.c.length >= 2 && row.c[0] && row.c[0].v && row.c[1] && row.c[1].v) {
+                        const key = row.c[0].v.trim();
+                        const value = row.c[1].v.trim();
+                        dataMap[key] = value;
+                    }
+                }
+                
+                // Assign values based on keys (hide if empty)
+                const player1 = document.getElementById("player1");
+                player1.innerText = dataMap["Player 1"] || "";
+                player1.classList.toggle("hidden", !dataMap["Player 1"]);
+
+                const player2 = document.getElementById("player2");
+                player2.innerText = dataMap["Player 2"] || "";
+                player2.classList.toggle("hidden", !dataMap["Player 2"]);
+
+                const scoreline = document.getElementById("scoreline");
+                scoreline.innerHTML = dataMap["Ticker"] ? colorScoreline(dataMap["Ticker"]) : "";
+                scoreline.classList.toggle("hidden", !dataMap["Ticker"]);
+
+                const crr = document.getElementById("crr");
+                crr.innerText = dataMap["CRR"] ? "CRR: " + dataMap["CRR"] : "";
+                crr.classList.toggle("hidden", !dataMap["CRR"]);
+
+                const bowler = document.getElementById("bowler");
+                bowler.innerText = dataMap["Bowler"] || "";
+                bowler.classList.toggle("hidden", !dataMap["Bowler"]);
+
+                if (dataMap["This Over"]) {
+                    const ballsText = dataMap["This Over"].replace(/^This Over:\s*/i, "");
+                    const balls = ballsText.split(" ").filter(b => b);
+                    flashNewBalls(document.getElementById("lastover"), balls);
+                } else {
+                    document.getElementById("lastover").classList.add("hidden");
+                }
+
+                adjustFontSize(scoreline, scoreline.parentElement.offsetWidth);
+
+            } catch (e) {
+                console.error("Error fetching score:", e);
+                document.getElementById("scoreline").innerText = "⚠ No update from sheet";
+            }
+        }
+
+        // Initialize and set interval for updates
+        fetchScore();
+        setInterval(fetchScore, 3000);
+    </script>
 </body>
 </html>
