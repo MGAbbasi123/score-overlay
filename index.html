@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Enhanced Cricket Score Overlay</title>
+<title>Cricket Score Overlay - Fixed Sync Issue</title>
 <style>
   body { 
     margin:0; 
@@ -155,11 +155,24 @@
     font-size: 10px;
     color: rgba(255,255,255,0.6);
   }
+  
+  .cache-warning {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    font-size: 10px;
+    color: #ff6b6b;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: none;
+  }
 </style>
 </head>
 <body>
 
 <div class="scorebar">
+  <div class="cache-warning" id="cache-warning">Cache Issue Detected</div>
   <div class="row">
     <div class="left player" id="player1">Loading...</div>
     <div class="center scoreline" id="scoreline">
@@ -180,8 +193,8 @@
 
 <script>
 // Configuration
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv&nocache=123456";
-const REFRESH_INTERVAL = 1000; // 1 second
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQBBphs5H4uRDzOf_wVI4ExfDz3hDAFYn3GWi9uorlEfN3MJLlfgzFfsKq94ccgGg/pub?output=csv";
+const REFRESH_INTERVAL = 2000; // 2 seconds to avoid overloading
 
 // State variables
 let lastBalls = [];
@@ -191,6 +204,18 @@ let lastPlayer1 = "";
 let lastPlayer2 = "";
 let lastScoreline = "";
 let updateCount = 0;
+let cacheIssueDetected = false;
+let lastDataHash = "";
+
+// Generate a more robust cache buster
+function generateCacheBuster() {
+  return `&t=${Date.now()}&r=${Math.random().toString(36).substring(2, 15)}`;
+}
+
+// Create a hash of the data to detect changes
+function createDataHash(data) {
+  return Object.values(data).join('|');
+}
 
 // Format ball display class
 function formatBallClass(ball) {
@@ -222,7 +247,9 @@ function flashIfChanged(el, newValue, lastValue) {
   if (newValue !== lastValue) {
     el.classList.add("flash");
     setTimeout(() => el.classList.remove("flash"), 800);
+    return true;
   }
+  return false;
 }
 
 // Adjust font size to fit container
@@ -250,9 +277,14 @@ function parseCSVData(text) {
   const data = {};
   
   lines.forEach(line => {
-    const [key, value] = line.split(',').map(item => item.trim());
-    if (key && value) {
-      data[key.toLowerCase()] = value;
+    // More robust parsing that handles commas in values
+    const firstComma = line.indexOf(',');
+    if (firstComma > 0) {
+      const key = line.substring(0, firstComma).trim().toLowerCase();
+      const value = line.substring(firstComma + 1).trim();
+      if (key && value) {
+        data[key] = value;
+      }
     }
   });
   
@@ -261,39 +293,52 @@ function parseCSVData(text) {
 
 // Update the display with new data
 function updateDisplay(data) {
+  const dataHash = createDataHash(data);
+  
+  // Check if data is different from the last update
+  if (dataHash === lastDataHash) {
+    // No changes, just update the timestamp
+    const now = new Date();
+    const timeString = now.toLocaleTimeString();
+    document.getElementById("last-update").textContent = `Last update: ${timeString}`;
+    return;
+  }
+  
+  lastDataHash = dataHash;
+  
   // Update player 1
   const player1El = document.getElementById("player1");
   const player1Value = data["player 1"] || "";
+  const player1Changed = flashIfChanged(player1El, player1Value, lastPlayer1);
   player1El.innerText = player1Value;
-  flashIfChanged(player1El, player1Value, lastPlayer1);
   lastPlayer1 = player1Value;
   
   // Update player 2
   const player2El = document.getElementById("player2");
   const player2Value = data["player 2"] || "";
+  const player2Changed = flashIfChanged(player2El, player2Value, lastPlayer2);
   player2El.innerText = player2Value;
-  flashIfChanged(player2El, player2Value, lastPlayer2);
   lastPlayer2 = player2Value;
   
   // Update scoreline
   const scorelineEl = document.getElementById("scoreline");
   const scorelineValue = data["ticker"] || "";
+  const scorelineChanged = flashIfChanged(scorelineEl, scorelineValue, lastScoreline);
   scorelineEl.innerHTML = colorScoreline(scorelineValue);
-  flashIfChanged(scorelineEl, scorelineValue, lastScoreline);
   lastScoreline = scorelineValue;
   
   // Update bowler
   const bowlerEl = document.getElementById("bowler");
   const bowlerValue = data["bowler"] || "";
+  const bowlerChanged = flashIfChanged(bowlerEl, bowlerValue, lastBowler);
   bowlerEl.innerText = bowlerValue;
-  flashIfChanged(bowlerEl, bowlerValue, lastBowler);
   lastBowler = bowlerValue;
   
   // Update CRR
   const crrEl = document.getElementById("crr");
   const crrValue = data["crr"] ? `CRR: ${data["crr"]}` : "";
+  const crrChanged = flashIfChanged(crrEl, crrValue, lastCRR);
   crrEl.innerText = crrValue;
-  flashIfChanged(crrEl, crrValue, lastCRR);
   lastCRR = crrValue;
   
   // Update last over
@@ -310,25 +355,46 @@ function updateDisplay(data) {
   const timeString = now.toLocaleTimeString();
   document.getElementById("last-update").textContent = `Last update: ${timeString}`;
   
-  // Pulse animation every 5 updates to indicate activity
-  if (updateCount % 5 === 0) {
-    document.getElementById("status-indicator").classList.add("pulse");
-    setTimeout(() => {
-      document.getElementById("status-indicator").classList.remove("pulse");
-    }, 500);
-  }
+  // Pulse animation to indicate activity
+  document.getElementById("status-indicator").classList.add("pulse");
+  setTimeout(() => {
+    document.getElementById("status-indicator").classList.remove("pulse");
+  }, 500);
   
   updateCount++;
+  
+  // If we detected a cache issue previously but now have good data, hide the warning
+  if (cacheIssueDetected) {
+    document.getElementById("cache-warning").style.display = 'none';
+    cacheIssueDetected = false;
+  }
 }
 
 // Fetch score data from Google Sheets
 async function fetchScore() {
   try {
-    const urlWithNoCache = `${SHEET_URL}&nocache=${Date.now()}`;
-    const res = await fetch(urlWithNoCache);
+    const urlWithNoCache = `${SHEET_URL}${generateCacheBuster()}`;
+    
+    // Use fetch with no-cache directives
+    const res = await fetch(urlWithNoCache, {
+      method: 'GET',
+      cache: 'no-cache',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+    
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    
     const text = await res.text();
     
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      throw new Error("Empty response from server");
+    }
     
     const data = parseCSVData(text);
     updateDisplay(data);
@@ -336,6 +402,12 @@ async function fetchScore() {
   } catch (e) {
     console.error("Error fetching score:", e);
     document.getElementById("status-indicator").className = "status-indicator status-offline";
+    
+    // Show cache warning if this isn't the first error
+    if (updateCount > 0) {
+      document.getElementById("cache-warning").style.display = 'block';
+      cacheIssueDetected = true;
+    }
   }
 }
 
@@ -350,4 +422,3 @@ window.addEventListener('load', init);
 </script>
 </body>
 </html>
-
