@@ -1,184 +1,183 @@
 <!DOCTYPE html>
+<!-- Cricket Overlay -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cricket Overlay</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: transparent;
-      color: #fff;
-    }
+<meta charset="UTF-8">
+<title>Cricket Score Overlay</title>
+<style>
+  body { margin:0; background:transparent; font-family: Arial, sans-serif; color:white; }
 
-    /* Outer Overlay Box - Full Width, Top */
-    .overlay {
-      position: fixed;       /* ✅ always visible */
-      top: 0;                /* ✅ at top of screen */
-      left: 0;
-      right: 0;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      padding: 20px 40px;
-      background: rgba(0, 0, 0, 0.75);
-      border-radius: 0;
-      width: 100%;
-      box-sizing: border-box;
-      font-size: clamp(18px, 2.5vw, 24px);
-      align-items: center;
-      z-index: 9999; /* stay above everything */
-    }
+  .scorebar {
+    position: fixed; 
+    top: 0;                 /* ✅ stick to very top */
+    left: 0; 
+    right: 0;
+    margin: 0;
+    width: 100%;
+    background: linear-gradient(to right, rgba(0,0,0,0.85), rgba(30,30,30,0.7));
+    border-radius: 0;       /* flat edges since full width */
+    padding: 12px 20px; 
+    box-sizing:border-box;
+    box-shadow:0 4px 12px rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+  }
 
-    .left {
-      text-align: left;
-      font-weight: 600;
-    }
-    .center {
-      text-align: center;
-      font-weight: 700;
-    }
-    .right {
-      text-align: right;
-      font-weight: 600;
-    }
+  .row { 
+    display:grid; 
+    grid-template-columns:1fr 1fr 1fr; 
+    align-items:center; 
+    margin:4px 0; 
+  }
 
-    /* This Over Box */
-    .over-box {
-      display: flex;
-      align-items: center;
-      background: linear-gradient(180deg, rgba(40,40,40,0.95), rgba(15,15,15,0.9));
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 18px;
-      padding: 10px 16px;
-      font-weight: 600;
-      max-width: 550px;
-      min-height: 60px;
-    }
+  .left { text-align:left; }
+  .center { text-align:center; }
+  .right { text-align:right; }
 
-    .over-text {
-      color: #ffeb3b;
-      margin-right: 10px;
-      font-size: clamp(16px, 2vw, 20px);
-      flex-shrink: 0;
-    }
+  .player, .bowler { 
+    font-size:22px; 
+    font-weight:bold; 
+    text-shadow:1px 1px 2px black; 
+  }
 
-    .balls-container {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      white-space: nowrap;
-      flex: 1;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-    .balls-container::-webkit-scrollbar {
-      display: none;
-    }
+  /* ✅ Auto-adjust ticker */
+  .scoreline {
+    font-size: 26px;
+    font-weight: bold;
+    text-shadow: 2px 2px 6px black;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    max-width: 100%;
+  }
+  .scoreline.shrink {
+    font-size: clamp(16px, 2vw, 26px); 
+  }
 
-    /* Ball styling + animation */
-    @keyframes ballIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px) scale(0.8);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
+  .crr { 
+    font-size:18px; 
+    font-style:italic; 
+    color:white; 
+    text-shadow:1px 1px 2px black; 
+  }
 
-    .ball {
-      display: inline-block;
-      min-width: 34px;
-      height: 34px;
-      line-height: 34px;
-      border-radius: 50%;
-      font-weight: 700;
-      text-align: center;
-      font-size: 18px;
-      animation: ballIn 0.4s ease forwards;
-    }
+  .ball { 
+    display:inline-block; 
+    margin:0 2px; 
+    padding:3px 7px; 
+    border-radius:50%; 
+    font-weight:bold; 
+    font-size:14px; 
+    color:white; 
+    text-align:center; 
+    min-width:18px; 
+  }
 
-    /* Color codes */
-    .dot { background: #777; color: #fff; }
-    .run { background: #4caf50; color: #fff; }
-    .four { background: #2196f3; color: #fff; }
-    .six { background: #ff9800; color: #fff; }
-    .wicket { background: #f44336; color: #fff; }
-    .wide, .nb { background: #9c27b0; color: #fff; }
-  </style>
+  .dot { background: gray; }
+  .run { background: green; }
+  .four { background: blue; }
+  .six { background: gold; color:black; }
+  .wicket { background: red; }
+  .wide { background: orange; }
+  .noball { background: purple; }
+</style>
 </head>
 <body>
-  <div class="overlay">
-    <div class="left" id="player1">Player 1</div>
-    <div class="center" id="ticker">TICKER</div>
-    <div class="right" id="bowler">Bowler</div>
 
-    <div class="left" id="player2">Player 2</div>
-    <div class="center" id="crr">CRR</div>
-    <div class="right">
-      <div class="over-box">
-        <span class="over-text">This Over:</span>
-        <div class="balls-container" id="balls"></div>
-      </div>
+<div class="scorebar">
+  <div class="row">
+    <div class="left player" id="player1"></div>
+    <div class="center">
+      <span class="scoreline shrink" id="ticker"></span>
     </div>
+    <div class="right bowler" id="bowler"></div>
   </div>
+  <div class="row">
+    <div class="left player" id="player2"></div>
+    <div class="center crr" id="crr"></div>
+    <div class="right" id="lastover"></div>
+  </div>
+</div>
 
-  <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
+<script>
+const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
 
-    function ballClass(b) {
-      if (b === "W") return "wicket";
-      if (b === "4") return "four";
-      if (b === "6") return "six";
-      if (b.toLowerCase() === "wd") return "wide";
-      if (b.toLowerCase() === "nb") return "nb";
-      if (b === "0") return "dot";
-      return "run";
+// ---- Parser ----
+function parseData(json) {
+  let data = {};
+  let cols = json.table.cols;
+  let rows = json.table.rows;
+
+  // ✅ Extract Player 1, Player 2, Ticker
+  if (cols.length > 1 && cols[1].label && cols[1].label.startsWith("Value")) {
+    let label = cols[1].label.replace("Value", "").trim();
+
+    let match = label.match(/^(.*?\(\d+\)) (.*?\(\d+\)) (.*)$/);
+    if (match) {
+      data["Player 1"] = match[1].trim();
+      data["Player 2"] = match[2].trim();
+      data["Ticker"]   = match[3].trim();
+    }
+  }
+
+  // ✅ Extract CRR, Bowler, This Over from rows
+  rows.forEach(row => {
+    if (row.c[0] && row.c[1]) {
+      data[row.c[0].v] = row.c[1].v;
+    }
+  });
+
+  return data;
+}
+
+// ---- Helper for colored balls ----
+function formatBall(b) {
+  let cls = "run";
+  let txt = b;
+
+  if (b === "0") cls = "dot";
+  else if (/^[1-3]$/.test(b)) cls = "run";
+  else if (b === "4") cls = "four";
+  else if (b === "6") cls = "six";
+  else if (/^w$/i.test(b)) cls = "wicket";
+  else if (/^wd$/i.test(b)) cls = "wide";
+  else if (/^nb$/i.test(b)) cls = "noball";
+
+  return `<span class="ball ${cls}">${txt}</span>`;
+}
+
+// ---- Fetch Loop ----
+async function fetchScore() {
+  try {
+    const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
+    const text = await res.text();
+    const json = JSON.parse(text.substr(47).slice(0, -2));
+    const data = parseData(json);
+
+    document.getElementById("player1").innerText = data["Player 1"] || "";
+    document.getElementById("player2").innerText = data["Player 2"] || "";
+    document.getElementById("ticker").innerText  = data["Ticker"]   || "";
+    document.getElementById("crr").innerText     = data["CRR"] ? "CRR: " + data["CRR"] : "";
+    document.getElementById("bowler").innerText  = data["Bowler"] ? "Bowler: " + data["Bowler"] : "";
+
+    if (data["This Over"]) {
+      const balls = data["This Over"].split(" ").filter(x => x.trim() !== "");
+      document.getElementById("lastover").innerHTML =
+        "This Over: " + balls.map(formatBall).join(" ");
+    } else {
+      document.getElementById("lastover").innerHTML = "";
     }
 
-    function formatBall(b) {
-      return `<span class="ball ${ballClass(b)}">${b}</span>`;
-    }
+  } catch (e) {
+    console.error("Error fetching score:", e);
+    document.getElementById("ticker").innerText = "⚠ No update from sheet";
+  }
+}
 
-    async function updateOverlay() {
-      try {
-        const res = await fetch(sheetURL);
-        const text = await res.text();
-        const json = JSON.parse(text.substr(47).slice(0, -2));
-        const rows = json.table.rows;
+setInterval(fetchScore, 2000);
+fetchScore();
+</script>
 
-        const data = {};
-        rows.forEach(row => {
-          if (row.c[0] && row.c[1]) {
-            const key = row.c[0].v.trim();
-            const value = row.c[1].v;
-            data[key] = value;
-          }
-        });
-
-        document.getElementById("player1").textContent = data["Player 1"] || "";
-        document.getElementById("player2").textContent = data["Player 2"] || "";
-        document.getElementById("ticker").textContent = data["Ticker"] || "";
-        document.getElementById("bowler").textContent = data["Bowler"] || "";
-        document.getElementById("crr").textContent = data["CRR"] || "";
-
-        const ballsEl = document.getElementById("balls");
-        if (data["This Over"]) {
-          const balls = data["This Over"].split(" ").filter(x => x.trim() !== "");
-          ballsEl.innerHTML = balls.map(formatBall).join(" ");
-          ballsEl.scrollTo({ left: ballsEl.scrollWidth, behavior: "smooth" });
-        } else {
-          ballsEl.innerHTML = "";
-        }
-      } catch (err) {
-        console.error("Error fetching sheet:", err);
-      }
-    }
-
-    setInterval(updateOverlay, 2000);
-    updateOverlay();
-  </script>
 </body>
 </html>
