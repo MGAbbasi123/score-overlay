@@ -44,10 +44,10 @@
 </div>
 
 <script>
-const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
+const sheetCSV = "https://docs.google.com/spreadsheets/d/e/YOUR_PUBLISHED_CSV_LINK/pub?output=csv";
 
 let lastBalls = [];
-let lastValues = {}; // store last fetched values to avoid flicker
+let lastValues = {};
 
 function formatBallClass(ball) {
   const b = ball.trim().toLowerCase();
@@ -96,22 +96,14 @@ function flashIfChanged(el,key,newVal){
   }
 }
 
-async function fetchScore(){
+async function fetchScoreCSV() {
   try{
-    const res = await fetch(sheetURL + "&t="+Date.now(),{cache:"no-store"});
+    const res = await fetch(sheetCSV + "&t=" + Date.now(),{cache:"no-store"});
     const text = await res.text();
-    const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
-    if(!match) throw new Error("Unexpected response format");
-
-    const json = JSON.parse(match[1]);
-    const rows = json.table.rows;
-
-    // Map Key -> Value safely
+    const rows = text.trim().split("\n").map(r => r.split(",").map(c=>c.trim()));
     const data = {};
     rows.forEach(r=>{
-      const key = r.c[0] && r.c[0].v ? r.c[0].v.trim() : null;
-      const value = r.c[1] && r.c[1].v ? r.c[1].v.trim() : "";
-      if(key) data[key] = value;
+      if(r[0]) data[r[0]] = r[1] || "";
     });
 
     // Update overlay
@@ -149,13 +141,13 @@ async function fetchScore(){
     }
 
   } catch(e){
-    console.error("Error fetching score:", e);
+    console.error("Error fetching CSV:", e);
     document.getElementById("scoreline").innerText="⚠ No update from sheet";
   }
 }
 
-fetchScore();
-setInterval(fetchScore,1000);
+fetchScoreCSV();
+setInterval(fetchScoreCSV,1000);
 </script>
 
 </body>
