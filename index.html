@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- 441 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -48,6 +47,11 @@
 const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
 
 let lastBalls = [];
+
+// normalize keys to avoid spaces/case mismatches
+function normalizeKey(k) {
+  return k.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
 function formatBallClass(ball) {
   const b = ball.trim().toLowerCase();
@@ -102,33 +106,35 @@ async function fetchScore() {
 
     const json = JSON.parse(match[1]);
 
-    // Convert rows into a key-value map
+    // Convert rows into a normalized key-value map
     const kv = {};
     json.table.rows.forEach(r => {
       if (r.c[0] && r.c[1]) {
-        kv[r.c[0].v.trim()] = r.c[1].v ? r.c[1].v.toString().trim() : "";
+        const key = normalizeKey(r.c[0].v);
+        kv[key] = r.c[1].v ? r.c[1].v.toString().trim() : "";
       }
     });
+    console.log("Sheet Data:", kv); // DEBUG – check what is coming
 
-    // Update overlay
-    document.getElementById("player1").innerText = kv["Player 1"] || "";
-    document.getElementById("player1").classList.toggle("hidden", !kv["Player 1"]);
+    // Update overlay using normalized keys
+    document.getElementById("player1").innerText = kv["player1"] || "";
+    document.getElementById("player1").classList.toggle("hidden", !kv["player1"]);
 
-    document.getElementById("player2").innerText = kv["Player 2"] || "";
-    document.getElementById("player2").classList.toggle("hidden", !kv["Player 2"]);
+    document.getElementById("player2").innerText = kv["player2"] || "";
+    document.getElementById("player2").classList.toggle("hidden", !kv["player2"]);
 
     const scoreline = document.getElementById("scoreline");
-    scoreline.innerHTML = kv["Ticker"] ? colorScoreline(kv["Ticker"]) : "";
-    scoreline.classList.toggle("hidden", !kv["Ticker"]);
+    scoreline.innerHTML = kv["ticker"] ? colorScoreline(kv["ticker"]) : "";
+    scoreline.classList.toggle("hidden", !kv["ticker"]);
 
-    document.getElementById("crr").innerText = kv["CRR"] ? "CRR: " + kv["CRR"] : "";
-    document.getElementById("crr").classList.toggle("hidden", !kv["CRR"]);
+    document.getElementById("crr").innerText = kv["crr"] ? "CRR: " + kv["crr"] : "";
+    document.getElementById("crr").classList.toggle("hidden", !kv["crr"]);
 
-    document.getElementById("bowler").innerText = kv["Bowler"] || "";
-    document.getElementById("bowler").classList.toggle("hidden", !kv["Bowler"]);
+    document.getElementById("bowler").innerText = kv["bowler"] || "";
+    document.getElementById("bowler").classList.toggle("hidden", !kv["bowler"]);
 
-    if (kv["This Over"]) {
-      const balls = kv["This Over"].split(" ").filter(b => b);
+    if (kv["thisover"]) {
+      const balls = kv["thisover"].split(" ").filter(b => b);
       flashNewBalls(document.getElementById("lastover"), balls);
     } else {
       document.getElementById("lastover").classList.add("hidden");
