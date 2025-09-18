@@ -11,16 +11,22 @@
       color: #fff;
     }
 
+    /* Outer Overlay Box - Full Width */
     .overlay {
+      position: fixed;       /* ✅ pinned at bottom */
+      bottom: 0;
+      left: 0;
+      right: 0;
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      padding: 10px 20px;
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 16px;
-      max-width: 900px;
-      margin: auto;
-      font-size: clamp(14px, 2vw, 20px);
+      gap: 12px;
+      padding: 20px 40px;
+      background: rgba(0, 0, 0, 0.75);
+      border-radius: 0;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: clamp(18px, 2.5vw, 24px);
+      align-items: center;
     }
 
     .left {
@@ -42,30 +48,31 @@
       align-items: center;
       background: linear-gradient(180deg, rgba(40,40,40,0.95), rgba(15,15,15,0.9));
       border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 14px;
-      padding: 6px 12px;
+      border-radius: 18px;
+      padding: 10px 16px;
       font-weight: 600;
-      max-width: 260px;
+      max-width: 550px;
+      min-height: 60px;
     }
 
     .over-text {
       color: #ffeb3b;
-      margin-right: 6px;
-      font-size: clamp(12px, 1.6vw, 16px);
-      flex-shrink: 0; /* never shrink */
+      margin-right: 10px;
+      font-size: clamp(16px, 2vw, 20px);
+      flex-shrink: 0;
     }
 
     .balls-container {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       overflow-x: auto;
       white-space: nowrap;
       flex: 1;
-      scrollbar-width: none;   /* Firefox */
-      -ms-overflow-style: none; /* IE/Edge */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
     .balls-container::-webkit-scrollbar {
-      display: none;  /* Chrome/Safari */
+      display: none;
     }
 
     /* Ball styling + animation */
@@ -82,12 +89,13 @@
 
     .ball {
       display: inline-block;
-      min-width: 22px;
-      padding: 4px 6px;
+      min-width: 34px;
+      height: 34px;
+      line-height: 34px;
       border-radius: 50%;
       font-weight: 700;
       text-align: center;
-      font-size: 14px;
+      font-size: 18px;
       animation: ballIn 0.4s ease forwards;
     }
 
@@ -117,7 +125,8 @@
   </div>
 
   <script>
-    // Example ball classifier
+    const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
+
     function ballClass(b) {
       if (b === "W") return "wicket";
       if (b === "4") return "four";
@@ -128,45 +137,45 @@
       return "run";
     }
 
-    // Example ball formatter
     function formatBall(b) {
       return `<span class="ball ${ballClass(b)}">${b}</span>`;
     }
 
-    // Simulated data fetch
-    function updateOverlay() {
-      // Example data (replace with Google Sheets fetch)
-      const data = {
-        "Player 1": "M Umer* 200(95)",
-        "Player 2": "Ali 45(30)",
-        "Ticker": "RAPTORS 301/4 (10.1/15) vs ALL STARS",
-        "Bowler": "J Khan 3-0-25-1",
-        "CRR": "CRR: 9.5",
-        "This Over": "0 1 4 6 W 2 wd nb"
-      };
+    async function updateOverlay() {
+      try {
+        const res = await fetch(sheetURL);
+        const text = await res.text();
+        const json = JSON.parse(text.substr(47).slice(0, -2));
+        const rows = json.table.rows;
 
-      document.getElementById("player1").textContent = data["Player 1"];
-      document.getElementById("player2").textContent = data["Player 2"];
-      document.getElementById("ticker").textContent = data["Ticker"];
-      document.getElementById("bowler").textContent = data["Bowler"];
-      document.getElementById("crr").textContent = data["CRR"];
-
-      const ballsEl = document.getElementById("balls");
-      if (data["This Over"]) {
-        const balls = data["This Over"].split(" ").filter(x => x.trim() !== "");
-        ballsEl.innerHTML = balls.map(formatBall).join(" ");
-
-        // Auto-scroll to latest ball
-        ballsEl.scrollTo({
-          left: ballsEl.scrollWidth,
-          behavior: "smooth"
+        const data = {};
+        rows.forEach(row => {
+          if (row.c[0] && row.c[1]) {
+            const key = row.c[0].v.trim();
+            const value = row.c[1].v;
+            data[key] = value;
+          }
         });
-      } else {
-        ballsEl.innerHTML = "";
+
+        document.getElementById("player1").textContent = data["Player 1"] || "";
+        document.getElementById("player2").textContent = data["Player 2"] || "";
+        document.getElementById("ticker").textContent = data["Ticker"] || "";
+        document.getElementById("bowler").textContent = data["Bowler"] || "";
+        document.getElementById("crr").textContent = data["CRR"] || "";
+
+        const ballsEl = document.getElementById("balls");
+        if (data["This Over"]) {
+          const balls = data["This Over"].split(" ").filter(x => x.trim() !== "");
+          ballsEl.innerHTML = balls.map(formatBall).join(" ");
+          ballsEl.scrollTo({ left: ballsEl.scrollWidth, behavior: "smooth" });
+        } else {
+          ballsEl.innerHTML = "";
+        }
+      } catch (err) {
+        console.error("Error fetching sheet:", err);
       }
     }
 
-    // Update every 2s (demo)
     setInterval(updateOverlay, 2000);
     updateOverlay();
   </script>
