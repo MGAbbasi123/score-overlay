@@ -98,7 +98,9 @@ function flashIfChanged(el,key,newVal){
 
 async function fetchScoreCSV() {
   try{
-    const res = await fetch(sheetCSV + "&t=" + Date.now(),{cache:"no-store"});
+    // Correct cache-busting URL
+    const url = sheetCSV.includes("?") ? sheetCSV + "&t=" + Date.now() : sheetCSV + "?t=" + Date.now();
+    const res = await fetch(url,{cache:"no-store"});
     const text = await res.text();
 
     const rows = text.trim().split("\n").map(r=>{
