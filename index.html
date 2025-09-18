@@ -10,7 +10,7 @@
       font-family: Arial, sans-serif;
       font-size: 18px;
       color: #fff;
-      background: rgba(0, 0, 0, 0.6); /* transparent black */
+      background: rgba(0, 0, 0, 0.6);
     }
     .overlay {
       display: flex;
@@ -23,13 +23,8 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.2);
       padding: 2px 0;
     }
-    .label {
-      font-weight: bold;
-      margin-right: 10px;
-    }
-    .value {
-      text-align: right;
-    }
+    .label { font-weight: bold; margin-right: 10px; }
+    .value { text-align: right; }
   </style>
 </head>
 <body>
@@ -54,15 +49,12 @@
 
           let data = {};
           rows.forEach(row => {
-            if (row.c[0] && row.c[1]) {
-              let key = row.c[0].v;
-              let value = row.c[1].v;
-              data[key] = value;
-            }
+            const key = row.c[0] ? row.c[0].v : null;
+            const value = row.c[1] ? row.c[1].v : null;
+            if (key && value) data[key.trim()] = value;
           });
 
-          console.clear();
-          console.log(data);
+          console.log("Parsed Data:", data);
 
           document.getElementById("player1").innerText = data["Player 1"] || "";
           document.getElementById("player2").innerText = data["Player 2"] || "";
@@ -74,8 +66,7 @@
         .catch(err => console.error("Error fetching data:", err));
     }
 
-    // Refresh every 1s
-    setInterval(fetchData, 1000);
+    setInterval(fetchData, 5000);
     fetchData();
   </script>
 </body>
