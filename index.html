@@ -48,17 +48,12 @@ const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVV
 
 let lastBalls = [];
 
-// normalize keys to avoid spaces/case mismatches
-function normalizeKey(k) {
-  return k.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
 function formatBallClass(ball) {
   const b = ball.trim().toLowerCase();
   if (b === "w") return "ball wicket";
   if (b === "0") return "ball dot";
   if (b === "wd") return "ball wide";
-  if (b === "nb") return "ball wide"; // treat no-ball like wide
+  if (b === "nb") return "ball wide"; // treat nb similar to wide
   if (b === "4") return "ball four";
   if (b === "6") return "ball six";
   if (!isNaN(b)) return "ball run";
@@ -106,41 +101,31 @@ async function fetchScore() {
 
     const json = JSON.parse(match[1]);
 
-    // Convert rows into a normalized key-value map
-    const kv = {};
-    json.table.rows.forEach(r => {
-      if (r.c[0] && r.c[1]) {
-        const key = normalizeKey(r.c[0].v);
-        kv[key] = r.c[1].v ? r.c[1].v.toString().trim() : "";
+    // Build a map {key: value}
+    const data = {};
+    json.table.rows.forEach(row => {
+      const key = row.c[0]?.v;
+      const value = row.c[1]?.v;
+      if (key && value !== null) {
+        data[key.trim().toLowerCase()] = value;
       }
     });
-    console.log("Sheet Data:", kv); // DEBUG – check what is coming
 
-    // Update overlay using normalized keys
-    document.getElementById("player1").innerText = kv["player1"] || "";
-    document.getElementById("player1").classList.toggle("hidden", !kv["player1"]);
+    // Map values to overlay
+    document.getElementById("player1").innerText = data["player 1"] || "";
+    document.getElementById("player2").innerText = data["player 2"] || "";
+    document.getElementById("scoreline").innerHTML = data["ticker"] ? colorScoreline(data["ticker"]) : "";
+    document.getElementById("crr").innerText = data["crr"] ? "CRR: " + data["crr"] : "";
+    document.getElementById("bowler").innerText = data["bowler"] ? "Bowler: " + data["bowler"] : "";
 
-    document.getElementById("player2").innerText = kv["player2"] || "";
-    document.getElementById("player2").classList.toggle("hidden", !kv["player2"]);
-
-    const scoreline = document.getElementById("scoreline");
-    scoreline.innerHTML = kv["ticker"] ? colorScoreline(kv["ticker"]) : "";
-    scoreline.classList.toggle("hidden", !kv["ticker"]);
-
-    document.getElementById("crr").innerText = kv["crr"] ? "CRR: " + kv["crr"] : "";
-    document.getElementById("crr").classList.toggle("hidden", !kv["crr"]);
-
-    document.getElementById("bowler").innerText = kv["bowler"] || "";
-    document.getElementById("bowler").classList.toggle("hidden", !kv["bowler"]);
-
-    if (kv["thisover"]) {
-      const balls = kv["thisover"].split(" ").filter(b => b);
+    if (data["this over"]) {
+      const balls = data["this over"].split(" ").filter(b => b);
       flashNewBalls(document.getElementById("lastover"), balls);
     } else {
       document.getElementById("lastover").classList.add("hidden");
     }
 
-    adjustFontSize(scoreline, scoreline.parentElement.offsetWidth);
+    adjustFontSize(document.getElementById("scoreline"), document.getElementById("scoreline").parentElement.offsetWidth);
 
   } catch (e) {
     console.error("Error fetching score:", e);
