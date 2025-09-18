@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- 844 -->
+<!-- 849 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -19,25 +19,20 @@
   .right { text-align:right; }
   .player { font-size:22px; font-weight:bold; text-shadow:1px 1px 2px black; }
   .bowler { font-size:22px; font-weight:bold; text-shadow:1px 1px 2px black; }
-  
-  /* ✅ Scrolling ticker */
-  .ticker-wrapper {
-    position: relative;
-    width: 100%;
-    overflow: hidden;
+
+  /* ✅ Auto-adjust ticker */
+  .scoreline {
+    font-size: 26px;
+    font-weight: bold;
+    text-shadow: 2px 2px 6px black;
     white-space: nowrap;
-  }
-  .ticker-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
     display: inline-block;
-    padding-left: 100%;
-    animation: scrollTicker 20s linear infinite;
-    font-size:26px;
-    font-weight:bold;
-    text-shadow:2px 2px 6px black;
+    max-width: 100%;
   }
-  @keyframes scrollTicker {
-    0%   { transform: translateX(0%); }
-    100% { transform: translateX(-100%); }
+  .scoreline.shrink {
+    font-size: clamp(16px, 2vw, 26px); /* Shrinks text responsively */
   }
 
   .crr { font-size:18px; font-style:italic; color:white; text-shadow:1px 1px 2px black; }
@@ -56,8 +51,8 @@
 <div class="scorebar">
   <div class="row">
     <div class="left player" id="player1"></div>
-    <div class="center ticker-wrapper">
-      <span class="ticker-text" id="ticker"></span>
+    <div class="center">
+      <span class="scoreline shrink" id="ticker"></span>
     </div>
     <div class="right bowler" id="bowler"></div>
   </div>
@@ -81,7 +76,6 @@ function parseData(json) {
   if (cols.length > 1 && cols[1].label && cols[1].label.startsWith("Value")) {
     let label = cols[1].label.replace("Value", "").trim();
 
-    // Capture player1, player2, then ticker
     let match = label.match(/^(.*?\(\d+\)) (.*?\(\d+\)) (.*)$/);
     if (match) {
       data["Player 1"] = match[1].trim();
@@ -124,7 +118,6 @@ async function fetchScore() {
     const json = JSON.parse(text.substr(47).slice(0, -2));
     const data = parseData(json);
 
-    // Update UI
     document.getElementById("player1").innerText = data["Player 1"] || "";
     document.getElementById("player2").innerText = data["Player 2"] || "";
     document.getElementById("ticker").innerText  = data["Ticker"]   || "";
