@@ -79,9 +79,6 @@
     <div class="center crr" id="crr">Loading...</div>
     <div class="right" id="lastover">Loading...</div>
   </div>
-
-  <!-- Container for extra keys -->
-  <div id="extraKeys"></div>
 </div>
 
 <script>
@@ -151,7 +148,7 @@ async function fetchScore() {
       }
     });
 
-    // Update main grid
+    // Map only the main fields to overlay
     if(data["Player 1"]){
       const el = document.getElementById("player1");
       el.innerText = data["Player 1"];
@@ -182,32 +179,6 @@ async function fetchScore() {
       const balls = data["This Over"].split(" ");
       flashNewBalls(document.getElementById("lastover"), balls);
     }
-
-    // Handle extra keys dynamically below main grid
-    const extraContainer = document.getElementById("extraKeys");
-    extraContainer.innerHTML = "";
-    Object.keys(data).forEach(key => {
-      if(!["Player 1","Player 2","Ticker","CRR","Bowler","This Over"].includes(key)){
-        const row = document.createElement("div");
-        row.className = "row";
-
-        const keyDiv = document.createElement("div");
-        keyDiv.className = "left key";
-        keyDiv.innerText = key + ":";
-
-        const valueDiv = document.createElement("div");
-        valueDiv.className = "center value";
-        valueDiv.style.gridColumn = "span 2";
-        valueDiv.innerText = data[key];
-
-        flashIfChanged(valueDiv, key, data[key]);
-        adjustFontSize(valueDiv, extraContainer.offsetWidth);
-
-        row.appendChild(keyDiv);
-        row.appendChild(valueDiv);
-        extraContainer.appendChild(row);
-      }
-    });
 
   } catch(e){
     console.error("Error fetching score:", e);
