@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<!-- 258 -->
-
+<!---- 303  -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -23,8 +22,6 @@
   .crr { font-size:18px; font-style:italic; color:white; text-shadow:1px 1px 2px black; }
   .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; color:white; text-align:center; }
   .dot { background: gray; } .run { background: green; } .four { background: blue; } .six { background: gold; color:black; } .wicket { background: red; } .wide { background: orange; }
-  @keyframes flashAnim { 0%{ background:rgba(255,255,255,0.8); } 50%{ background:rgba(255,255,255,0); } 100%{ background:rgba(255,255,255,0); } }
-  .flash { animation: flashAnim 0.8s ease forwards; }
   @keyframes bounce { 0%{ transform:translateY(0); } 30%{ transform:translateY(-8px); } 50%{ transform:translateY(0); } 70%{ transform:translateY(-4px); } 100%{ transform:translateY(0); } }
   .bounce { animation: bounce 0.5s ease forwards; }
   .hidden { display:none; }
@@ -34,21 +31,19 @@
 
 <div class="scorebar">
   <div class="row">
-    <div class="left player" id="player1"></div>
+    <div class="right player" id="player1"></div>
     <div class="center scoreline" id="scoreline"></div>
-    <div class="right bowler" id="bowler"></div>
+    <div class="left bowler" id="bowler"></div>
   </div>
   <div class="row">
-    <div class="left player" id="player2"></div>
+    <div class="right player" id="player2"></div>
     <div class="center crr" id="crr"></div>
-    <div class="right" id="lastover"></div>
+    <div class="left" id="lastover"></div>
   </div>
 </div>
 
 <script>
-// Google Sheets JSON Visualization API endpoint
 const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
-
 let lastBalls = [];
 
 function formatBallClass(ball) {
@@ -56,7 +51,6 @@ function formatBallClass(ball) {
   if (b === "w") return "ball wicket";
   if (b === "0") return "ball dot";
   if (b === "wd") return "ball wide";
-  if (b === "nb") return "ball wide";
   if (b === "4") return "ball four";
   if (b === "6") return "ball six";
   if (!isNaN(b)) return "ball run";
@@ -75,17 +69,6 @@ function flashNewBalls(el, newBalls) {
   lastBalls = [...newBalls];
 }
 
-function adjustFontSize(el, maxWidth) {
-  if (!el.innerText.trim() && !el.innerHTML.trim()) { el.classList.add("hidden"); return; }
-  el.classList.remove("hidden");
-  let fontSize = 30;
-  el.style.fontSize = fontSize + "px";
-  while (el.scrollWidth > maxWidth && fontSize > 14) {
-    fontSize -= 1;
-    el.style.fontSize = fontSize + "px";
-  }
-}
-
 function colorScoreline(text){
   const parts = text.split(/vs/i);
   if (parts.length === 2) {
@@ -100,32 +83,29 @@ async function fetchScore() {
     const text = await res.text();
     const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
     if (!match) throw new Error("Unexpected response format from Google Sheets");
-
     const json = JSON.parse(match[1]);
 
-    // Build key-value map
-    const data = {};
+    // Map keys to values
+    const dataMap = {};
     json.table.rows.forEach(row => {
       const key = row.c[0]?.v;
       const value = row.c[1]?.v;
-      if (key) data[key] = value;
+      if (key) dataMap[key] = value;
     });
 
-    // Assign to overlay
-    document.getElementById("player1").innerText = data["Player 1"] || "";
-    document.getElementById("player2").innerText = data["Player 2"] || "";
-    document.getElementById("scoreline").innerHTML = data["Ticker"] ? colorScoreline(data["Ticker"]) : "";
-    document.getElementById("crr").innerText = data["CRR"] || "";
-    document.getElementById("bowler").innerText = data["Bowler"] || "";
-
-    if (data["This Over"]) {
-      const balls = data["This Over"].split(" ").filter(b => b);
+    // Assign values
+    document.getElementById("player1").innerText = dataMap["Player 1"] || "";
+    document.getElementById("player2").innerText = dataMap["Player 2"] || "";
+    document.getElementById("scoreline").innerHTML = dataMap["Ticker"] ? colorScoreline(dataMap["Ticker"]) : "";
+    document.getElementById("crr").innerText = dataMap["CRR"] || "";
+    document.getElementById("bowler").innerText = dataMap["Bowler"] || "";
+    
+    if (dataMap["This Over"]) {
+      const balls = dataMap["This Over"].split(" ").filter(b => b);
       flashNewBalls(document.getElementById("lastover"), balls);
     } else {
       document.getElementById("lastover").classList.add("hidden");
     }
-
-    adjustFontSize(document.getElementById("scoreline"), document.getElementById("scoreline").parentElement.offsetWidth);
 
   } catch (e) {
     console.error("Error fetching score:", e);
@@ -133,7 +113,6 @@ async function fetchScore() {
   }
 }
 
-// Initial fetch + interval
 fetchScore();
 setInterval(fetchScore, 1000);
 </script>
