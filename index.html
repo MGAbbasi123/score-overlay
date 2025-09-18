@@ -1,89 +1,100 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Cricket Overlay</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      font-size: 20px;
-      font-weight: bold;
-      color: white;
-      background: rgba(0,0,0,0.6);
-      padding: 20px;
-    }
-    .score-line {
-      margin: 5px 0;
-    }
-    .key {
-      color: #FFD700; /* gold for labels */
-    }
-    .value {
-      color: #FFFFFF; /* white for values */
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Cricket Score Overlay</title>
+<style>
+  body { margin:0; background:transparent; font-family: Arial, sans-serif; color:white; }
+  .scorebar {
+    position: fixed; top:10px; left:50%; transform:translateX(-50%);
+    width:90%; background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(30,30,30,0.5));
+    border-radius:20px; padding:12px 15px; box-sizing:border-box;
+    box-shadow:0 4px 12px rgba(0,0,0,0.6), 0 0 15px rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+  }
+  .row { display:grid; grid-template-columns:1.5fr 3fr 1.5fr; align-items:center; margin:5px 0; }
+  .left { text-align:left; } .center { text-align:center; } .right { text-align:right; }
+  .player { font-size:26px; font-weight:bold; text-shadow:1px 1px 2px black; }
+  .bowler { font-size:24px; font-weight:bold; text-shadow:1px 1px 2px black; }
+  .scoreline { font-size:30px; font-weight:bold; text-shadow:2px 2px 6px black; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .team1 { color:#ffd700; font-weight:bold; } .team2 { color:#1e90ff; font-weight:bold; } .vs { color:#ffffff; font-weight:bold; }
+  .crr { font-size:18px; font-style:italic; color:white; text-shadow:1px 1px 2px black; }
+  .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; color:white; text-align:center; }
+  .dot { background: gray; } .run { background: green; } .four { background: blue; } .six { background: gold; color:black; } .wicket { background: red; } .wide { background: orange; }
+  .hidden { display:none; }
+</style>
 </head>
 <body>
-  <div id="overlay"></div>
 
-  <script>
-    async function fetchData() {
-      const url = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
+<div class="scorebar">
+  <div class="row">
+    <div class="left player" id="player1"></div>
+    <div class="center scoreline" id="ticker"></div>
+    <div class="right bowler" id="bowler"></div>
+  </div>
+  <div class="row">
+    <div class="left player" id="player2"></div>
+    <div class="center crr" id="crr"></div>
+    <div class="right" id="lastover"></div>
+  </div>
+</div>
 
-      try {
-        const res = await fetch(url);
-        const text = await res.text();
+<script>
+const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
 
-        // Clean Google response
-        const json = JSON.parse(text.substr(47).slice(0, -2));
+function parseData(json) {
+  let data = {};
+  let cols = json.table.cols;
+  let rows = json.table.rows;
 
-        const data = parseData(json);
-        renderData(data);
+  // ✅ Extract Player 1, Player 2, Ticker from column labels
+  if (cols.length > 1) {
+    let values = cols[1].label.split(" ");
+    data["Player 1"] = values[0] + " " + values[1];
+    data["Player 2"] = values[2] + " " + values[3];
+    data["Ticker"]  = values.slice(4).join(" ");
+  }
 
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
+  // ✅ Extract CRR, Bowler, This Over
+  rows.forEach(row => {
+    if (row.c[0] && row.c[1]) {
+      data[row.c[0].v] = row.c[1].v;
+    }
+  });
+
+  return data;
+}
+
+async function fetchScore() {
+  try {
+    const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
+    const text = await res.text();
+    const json = JSON.parse(text.substr(47).slice(0, -2));
+    const data = parseData(json);
+
+    // Update overlay
+    document.getElementById("player1").innerText = data["Player 1"] || "";
+    document.getElementById("player2").innerText = data["Player 2"] || "";
+    document.getElementById("ticker").innerText  = data["Ticker"] || "";
+    document.getElementById("crr").innerText     = data["CRR"] ? "CRR: " + data["CRR"] : "";
+    document.getElementById("bowler").innerText  = data["Bowler"] ? "Bowler: " + data["Bowler"] : "";
+
+    if (data["This Over"]) {
+      const balls = data["This Over"].split(" ");
+      document.getElementById("lastover").innerHTML = "This Over: " + balls.map(b => `<span class="ball">${b}</span>`).join(" ");
+    } else {
+      document.getElementById("lastover").innerHTML = "";
     }
 
-    function parseData(json) {
-      let data = {};
-      let cols = json.table.cols;
-      let rows = json.table.rows;
+  } catch (e) {
+    console.error("Error fetching score:", e);
+    document.getElementById("ticker").innerText = "⚠ No update from sheet";
+  }
+}
 
-      // ✅ Extract Player 1, Player 2, and Ticker from column labels
-      if (cols.length > 1) {
-        let values = cols[1].label.split(" ");
+setInterval(fetchScore, 1000);
+fetchScore();
+</script>
 
-        data["Player 1"] = values[0] + " " + values[1];  
-        data["Player 2"] = values[2] + " " + values[3];  
-        data["Ticker"]  = values.slice(4).join(" ");      
-      }
-
-      // ✅ Extract CRR, Bowler, This Over, etc.
-      rows.forEach(row => {
-        if (row.c[0] && row.c[1]) {
-          data[row.c[0].v] = row.c[1].v;
-        }
-      });
-
-      return data;
-    }
-
-    function renderData(data) {
-      const overlay = document.getElementById("overlay");
-      overlay.innerHTML = "";
-
-      for (let key in data) {
-        const div = document.createElement("div");
-        div.className = "score-line";
-        div.innerHTML = `<span class="key">${key}:</span> <span class="value">${data[key]}</span>`;
-        overlay.appendChild(div);
-      }
-    }
-
-    // Refresh every 5 seconds
-    setInterval(fetchData, 5000);
-    fetchData();
-  </script>
 </body>
 </html>
