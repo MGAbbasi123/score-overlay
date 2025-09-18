@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- MG 0232 -->
+<!-- 236 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -22,6 +22,8 @@
   .crr { font-size:18px; font-style:italic; color:white; text-shadow:1px 1px 2px black; }
   .ball { display:inline-block; margin:0 2px; padding:3px 6px; border-radius:50%; font-weight:bold; font-size:14px; color:white; text-align:center; }
   .dot { background: gray; } .run { background: green; } .four { background: blue; } .six { background: gold; color:black; } .wicket { background: red; } .wide { background: orange; }
+  @keyframes flashAnim { 0%{ background:rgba(255,255,255,0.8); } 50%{ background:rgba(255,255,255,0); } 100%{ background:rgba(255,255,255,0); } }
+  .flash { animation: flashAnim 0.8s ease forwards; }
   @keyframes bounce { 0%{ transform:translateY(0); } 30%{ transform:translateY(-8px); } 50%{ transform:translateY(0); } 70%{ transform:translateY(-4px); } 100%{ transform:translateY(0); } }
   .bounce { animation: bounce 0.5s ease forwards; }
   .hidden { display:none; }
@@ -43,6 +45,7 @@
 </div>
 
 <script>
+// Visualization API JSON endpoint
 const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
 
 let lastBalls = [];
@@ -70,6 +73,17 @@ function flashNewBalls(el, newBalls) {
   lastBalls = [...newBalls];
 }
 
+function adjustFontSize(el, maxWidth) {
+  if (!el.innerText.trim() && !el.innerHTML.trim()) { el.classList.add("hidden"); return; }
+  el.classList.remove("hidden");
+  let fontSize = 30;
+  el.style.fontSize = fontSize + "px";
+  while (el.scrollWidth > maxWidth && fontSize > 14) {
+    fontSize -= 1;
+    el.style.fontSize = fontSize + "px";
+  }
+}
+
 async function fetchScore() {
   try {
     const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
@@ -79,33 +93,50 @@ async function fetchScore() {
     if (!match) throw new Error("Unexpected response format from Google Sheets");
 
     const json = JSON.parse(match[1]);
+    const rows = json.table.rows;
 
-    // map all keys to their values
+    // Map key -> value
     const data = {};
-    json.table.rows.forEach(row => {
-      if (row.c && row.c[0] && row.c[0].v) {
-        const key = row.c[0].v.trim();
-        const value = row.c[1] && row.c[1].v ? row.c[1].v.trim() : "";
+    rows.forEach(r => {
+      if (r.c && r.c[0] && r.c[0].v) {
+        const key = r.c[0].v.trim();
+        const value = (r.c[1] && r.c[1].v) ? r.c[1].v.trim() : "";
         data[key] = value;
       }
     });
 
     // Assign values to overlay
-    document.getElementById("player1").innerText = data["Player 1"] || "";
-    document.getElementById("player2").innerText = data["Player 2"] || "";
-    document.getElementById("ticker").innerHTML = data["Ticker"] 
-        ? data["Ticker"].replace(/vs/i, '<span class="vs">vs</span>') 
-        : "";
-    document.getElementById("crr").innerText = data["CRR"] || "";
-    document.getElementById("bowler").innerText = data["Bowler"] || "";
+    const player1 = document.getElementById("player1");
+    player1.innerText = data["Player 1"] || "";
+    player1.classList.toggle("hidden", !data["Player 1"]);
 
-    const ballsText = data["This Over"] || "";
-    const balls = ballsText.split(" ").filter(b => b);
-    flashNewBalls(document.getElementById("lastover"), balls);
+    const player2 = document.getElementById("player2");
+    player2.innerText = data["Player 2"] || "";
+    player2.classList.toggle("hidden", !data["Player 2"]);
+
+    const ticker = document.getElementById("ticker");
+    ticker.innerText = data["Ticker"] || "";
+    ticker.classList.toggle("hidden", !data["Ticker"]);
+
+    const crr = document.getElementById("crr");
+    crr.innerText = data["CRR"] || "";
+    crr.classList.toggle("hidden", !data["CRR"]);
+
+    const bowler = document.getElementById("bowler");
+    bowler.innerText = data["Bowler"] || "";
+    bowler.classList.toggle("hidden", !data["Bowler"]);
+
+    if (data["This Over"]) {
+      const balls = data["This Over"].split(" ").filter(b => b);
+      flashNewBalls(document.getElementById("lastover"), balls);
+    } else {
+      document.getElementById("lastover").classList.add("hidden");
+    }
+
+    adjustFontSize(ticker, ticker.parentElement.offsetWidth);
 
   } catch (e) {
     console.error("Error fetching score:", e);
-    document.getElementById("ticker").innerText = "⚠ No update from sheet";
   }
 }
 
