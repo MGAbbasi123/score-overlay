@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- 441 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -44,7 +45,6 @@
 </div>
 
 <script>
-// Visualization API JSON endpoint
 const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
 
 let lastBalls = [];
@@ -53,7 +53,8 @@ function formatBallClass(ball) {
   const b = ball.trim().toLowerCase();
   if (b === "w") return "ball wicket";
   if (b === "0") return "ball dot";
-  if (b === "wd" || b === "nb") return "ball wide";
+  if (b === "wd") return "ball wide";
+  if (b === "nb") return "ball wide"; // treat no-ball like wide
   if (b === "4") return "ball four";
   if (b === "6") return "ball six";
   if (!isNaN(b)) return "ball run";
@@ -83,7 +84,7 @@ function adjustFontSize(el, maxWidth) {
   }
 }
 
-function colorScoreline(text) {
+function colorScoreline(text){
   const parts = text.split(/vs/i);
   if (parts.length === 2) {
     return `<span class="team1">${parts[0].trim()}</span> <span class="vs">vs</span> <span class="team2">${parts[1].trim()}</span>`;
@@ -97,50 +98,42 @@ async function fetchScore() {
     const text = await res.text();
 
     const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
-    if (!match) {
-        console.error("Could not find JSON data in response. Check sheet sharing permissions.");
-        document.getElementById("scoreline").innerText = "⚠ Check sheet sharing";
-        return;
-    }
+    if (!match) throw new Error("Unexpected response format from Google Sheets");
 
     const json = JSON.parse(match[1]);
-    const rows = json.table.rows;
-    const data = {};
 
-    rows.forEach(row => {
-      const key = row.c[0]?.v;
-      const value = row.c[1]?.v;
-      if (key && value !== undefined) {
-        const standardizedKey = key.trim().toLowerCase();
-        data[standardizedKey] = value;
+    // Convert rows into a key-value map
+    const kv = {};
+    json.table.rows.forEach(r => {
+      if (r.c[0] && r.c[1]) {
+        kv[r.c[0].v.trim()] = r.c[1].v ? r.c[1].v.toString().trim() : "";
       }
     });
 
-    // Assign values using the standardized key names
-    const player1 = document.getElementById("player1");
-    player1.innerText = data["player 1"] || "";
-    player1.classList.toggle("hidden", !data["player 1"]);
+    // Update overlay
+    document.getElementById("player1").innerText = kv["Player 1"] || "";
+    document.getElementById("player1").classList.toggle("hidden", !kv["Player 1"]);
 
-    const player2 = document.getElementById("player2");
-    player2.innerText = data["player 2"] || "";
-    player2.classList.toggle("hidden", !data["player 2"]);
+    document.getElementById("player2").innerText = kv["Player 2"] || "";
+    document.getElementById("player2").classList.toggle("hidden", !kv["Player 2"]);
 
     const scoreline = document.getElementById("scoreline");
-    scoreline.innerHTML = data["ticker"] ? colorScoreline(data["ticker"]) : "";
-    scoreline.classList.toggle("hidden", !data["ticker"]);
+    scoreline.innerHTML = kv["Ticker"] ? colorScoreline(kv["Ticker"]) : "";
+    scoreline.classList.toggle("hidden", !kv["Ticker"]);
 
-    const crr = document.getElementById("crr");
-    crr.innerText = data["crr"] ? `CRR: ${data["crr"]}` : "";
-    crr.classList.toggle("hidden", !data["crr"]);
+    document.getElementById("crr").innerText = kv["CRR"] ? "CRR: " + kv["CRR"] : "";
+    document.getElementById("crr").classList.toggle("hidden", !kv["CRR"]);
 
-    const bowler = document.getElementById("bowler");
-    bowler.innerText = data["bowler"] ? `Bowler: ${data["bowler"]}` : "";
-    bowler.classList.toggle("hidden", !data["bowler"]);
+    document.getElementById("bowler").innerText = kv["Bowler"] || "";
+    document.getElementById("bowler").classList.toggle("hidden", !kv["Bowler"]);
 
-    const lastOverText = data["this over"] || "";
-    const balls = lastOverText.split(" ").filter(b => b);
-    flashNewBalls(document.getElementById("lastover"), balls);
-    
+    if (kv["This Over"]) {
+      const balls = kv["This Over"].split(" ").filter(b => b);
+      flashNewBalls(document.getElementById("lastover"), balls);
+    } else {
+      document.getElementById("lastover").classList.add("hidden");
+    }
+
     adjustFontSize(scoreline, scoreline.parentElement.offsetWidth);
 
   } catch (e) {
