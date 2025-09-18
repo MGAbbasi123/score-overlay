@@ -100,13 +100,17 @@ async function fetchScoreCSV() {
   try{
     const res = await fetch(sheetCSV + "&t=" + Date.now(),{cache:"no-store"});
     const text = await res.text();
-    const rows = text.trim().split("\n").map(r => r.split(",").map(c=>c.trim()));
+
+    const rows = text.trim().split("\n").map(r=>{
+      const parts = r.split(/,(.+)/).map(c => c.replace(/^"|"$/g,'').trim());
+      return parts;
+    });
+
     const data = {};
     rows.forEach(r=>{
       if(r[0]) data[r[0]] = r[1] || "";
     });
 
-    // Update overlay
     const player1 = document.getElementById("player1");
     player1.innerText = data["Player 1"] || "";
     player1.classList.toggle("hidden", !data["Player 1"]);
