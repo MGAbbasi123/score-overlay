@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- 427 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -54,7 +53,7 @@ function formatBallClass(ball) {
   const b = ball.trim().toLowerCase();
   if (b === "w") return "ball wicket";
   if (b === "0") return "ball dot";
-  if (b === "wd") return "ball wide";
+  if (b === "wd" || b === "nb") return "ball wide"; // Adjusted for 'nb'
   if (b === "4") return "ball four";
   if (b === "6") return "ball six";
   if (!isNaN(b)) return "ball run";
@@ -84,7 +83,7 @@ function adjustFontSize(el, maxWidth) {
   }
 }
 
-function colorScoreline(text){
+function colorScoreline(text) {
   const parts = text.split(/vs/i);
   if (parts.length === 2) {
     return `<span class="team1">${parts[0].trim()}</span> <span class="vs">vs</span> <span class="team2">${parts[1].trim()}</span>`;
@@ -97,53 +96,56 @@ async function fetchScore() {
     const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
     const text = await res.text();
 
+    console.log("Raw response from Google Sheets:", text); // Log raw response
+
     const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
-    if (!match) throw new Error("Unexpected response format from Google Sheets");
+    if (!match) {
+        console.error("Could not find JSON data in response. Check sheet sharing permissions.");
+        document.getElementById("scoreline").innerText = "⚠ Check sheet sharing";
+        return;
+    }
 
     const json = JSON.parse(match[1]);
     const rows = json.table.rows;
-    
-    // Create a mapping object to store key-value pairs
-    const dataMap = {};
-    
-    // Process each row to extract key-value pairs
+    const data = {};
+
+    console.log("Parsed JSON Rows:", rows); // Log parsed rows
+
     rows.forEach(row => {
-      if (row.c && row.c.length >= 2 && row.c[0].v && row.c[1].v) {
-        const key = row.c[0].v.trim();
-        const value = row.c[1].v.trim();
-        dataMap[key] = value;
+      const key = row.c[0]?.v;
+      const value = row.c[1]?.v;
+      if (key && value !== undefined) {
+        data[key.trim()] = value;
       }
     });
     
-    // Assign values based on keys (hide if empty)
+    console.log("Final Data Object:", data); // Log final key-value pairs
+
+    // Assign values based on the new key-value format
     const player1 = document.getElementById("player1");
-    player1.innerText = dataMap["Player 1"] || "";
-    player1.classList.toggle("hidden", !dataMap["Player 1"]);
+    player1.innerText = data["Player 1"] || "";
+    player1.classList.toggle("hidden", !data["Player 1"]);
 
     const player2 = document.getElementById("player2");
-    player2.innerText = dataMap["Player 2"] || "";
-    player2.classList.toggle("hidden", !dataMap["Player 2"]);
+    player2.innerText = data["Player 2"] || "";
+    player2.classList.toggle("hidden", !data["Player 2"]);
 
     const scoreline = document.getElementById("scoreline");
-    scoreline.innerHTML = dataMap["Ticker"] ? colorScoreline(dataMap["Ticker"]) : "";
-    scoreline.classList.toggle("hidden", !dataMap["Ticker"]);
+    scoreline.innerHTML = data["Ticker"] ? colorScoreline(data["Ticker"]) : "";
+    scoreline.classList.toggle("hidden", !data["Ticker"]);
 
     const crr = document.getElementById("crr");
-    crr.innerText = dataMap["CRR"] ? "CRR: " + dataMap["CRR"] : "";
-    crr.classList.toggle("hidden", !dataMap["CRR"]);
+    crr.innerText = data["CRR"] ? `CRR: ${data["CRR"]}` : "";
+    crr.classList.toggle("hidden", !data["CRR"]);
 
     const bowler = document.getElementById("bowler");
-    bowler.innerText = dataMap["Bowler"] || "";
-    bowler.classList.toggle("hidden", !dataMap["Bowler"]);
+    bowler.innerText = data["Bowler"] ? `Bowler: ${data["Bowler"]}` : "";
+    bowler.classList.toggle("hidden", !data["Bowler"]);
 
-    if (dataMap["This Over"]) {
-      const ballsText = dataMap["This Over"].replace(/^This Over:\s*/i, "");
-      const balls = ballsText.split(" ").filter(b => b);
-      flashNewBalls(document.getElementById("lastover"), balls);
-    } else {
-      document.getElementById("lastover").classList.add("hidden");
-    }
-
+    const lastOverText = data["This Over"] || "";
+    const balls = lastOverText.split(" ").filter(b => b);
+    flashNewBalls(document.getElementById("lastover"), balls);
+    
     adjustFontSize(scoreline, scoreline.parentElement.offsetWidth);
 
   } catch (e) {
