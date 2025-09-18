@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Live Cricket Overlay</title>
+<title>Cricket Overlay</title>
 <style>
 body {
   margin: 0;
@@ -28,22 +28,9 @@ body {
   align-items: center;
   margin: 3px 0;
 }
-.center {
-  flex: 1;
-  text-align: center;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-weight: bold;
-  font-size: 22px;
-  text-shadow: 1px 1px 2px black;
-}
-.right {
-  text-align: right;
-  font-weight: bold;
-  font-size: 18px;
-  text-shadow: 1px 1px 2px black;
-}
+.left { text-align: left; }
+.center { text-align: center; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: bold; font-size: 22px; text-shadow: 1px 1px 2px black; }
+.right { text-align: right; font-weight: bold; font-size: 22px; text-shadow: 1px 1px 2px black; }
 .ball {
   display: inline-block;
   margin: 0 2px;
@@ -63,27 +50,27 @@ body {
 @keyframes bounce { 0%{ transform:translateY(0); } 30%{ transform:translateY(-6px); } 50%{ transform:translateY(0); } 70%{ transform:translateY(-3px); } 100%{ transform:translateY(0); } }
 .bounce { animation: bounce 0.4s ease forwards; }
 .hidden { display: none; }
-.team1 { color: #ffd700; font-weight: bold; }
-.team2 { color: #1e90ff; font-weight: bold; }
-.vs { color: #ffffff; font-weight: bold; }
 </style>
 </head>
 <body>
 
 <div class="scorebar">
   <div class="row">
+    <div class="right" id="player1"></div>
     <div class="center" id="ticker"></div>
-    <div class="right" id="bowlerCRR"></div>
+    <div class="left" id="bowler"></div>
   </div>
   <div class="row">
-    <div class="center" id="lastover"></div>
+    <div class="right" id="player2"></div>
+    <div class="center" id="crr"></div>
+    <div class="left" id="lastover"></div>
   </div>
 </div>
 
 <script>
 const sheetURL = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
+
 let lastBalls = [];
-let lastValues = {};
 
 function formatBallClass(ball) {
   const b = ball.trim().toLowerCase();
@@ -108,23 +95,17 @@ function flashNewBalls(el, newBalls) {
   lastBalls = [...newBalls];
 }
 
-function formatTicker(player1, player2, ticker) {
-  const vsParts = ticker.split(/vs/i);
-  let formattedTicker = ticker;
-  if (vsParts.length === 2) {
-    formattedTicker = `<span class="team1">${vsParts[0].trim()}</span> <span class="vs">vs</span> <span class="team2">${vsParts[1].trim()}</span>`;
-  }
-  return `${player1} | ${player2} | ${formattedTicker}`;
-}
-
 async function fetchScore() {
   try {
     const res = await fetch(sheetURL + "&t=" + Date.now(), { cache: "no-store" });
     const text = await res.text();
+
     const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/);
     if (!match) throw new Error("Unexpected response format");
+
     const json = JSON.parse(match[1]);
 
+    // Convert JSON rows to key-value object
     const data = {};
     json.table.rows.forEach(r => {
       const key = r.c[0]?.v?.trim();
@@ -132,28 +113,18 @@ async function fetchScore() {
       if (key) data[key] = value;
     });
 
-    // Ticker
-    const newTicker = formatTicker(data["Player 1"] || "", data["Player 2"] || "", data["Ticker"] || "");
-    const tickerEl = document.getElementById("ticker");
-    if (lastValues["ticker"] !== newTicker) {
-      tickerEl.innerHTML = newTicker;
-      lastValues["ticker"] = newTicker;
-    }
+    // Assign values
+    document.getElementById("player1").innerText = data["Player 1"] || "";
+    document.getElementById("player2").innerText = data["Player 2"] || "";
+    document.getElementById("ticker").innerText = data["Ticker"] || "";
+    document.getElementById("crr").innerText = data["CRR"] || "";
+    document.getElementById("bowler").innerText = data["Bowler"] || "";
 
-    // Bowler + CRR
-    const bowlerCRREl = document.getElementById("bowlerCRR");
-    const bowlerCRRText = `${data["Bowler"] || ""} | CRR: ${data["CRR"] || ""}`;
-    if (lastValues["bowlerCRR"] !== bowlerCRRText) {
-      bowlerCRREl.innerText = bowlerCRRText;
-      lastValues["bowlerCRR"] = bowlerCRRText;
-    }
-
-    // Last Over
     const ballsText = data["This Over"] || "";
     const balls = ballsText.split(" ").filter(b => b);
     flashNewBalls(document.getElementById("lastover"), balls);
 
-  } catch (e) {
+  } catch(e) {
     console.error("Error fetching score:", e);
   }
 }
