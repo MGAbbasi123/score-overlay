@@ -49,41 +49,39 @@
     white-space: nowrap;
   }
 
-  /* ✅ Bowler & CRR smaller */
+  /* ✅ Bowler larger */
   .bowler {
-    font-size: clamp(13px, 1.8vw, 18px);
+    font-size: clamp(15px, 2vw, 22px);
+    font-weight: 600;
     font-style: italic;
-    opacity: 0.9;
+    opacity: 0.95;
     text-shadow:0 0 3px rgba(0,0,0,0.7);
   }
+
+  /* ✅ CRR smaller contrast */
   .crr {
-    font-size: clamp(12px, 1.5vw, 17px);
+    font-size: clamp(12px, 1.6vw, 18px);
     font-style: italic;
     opacity: 0.85;
     text-shadow:0 0 3px rgba(0,0,0,0.7);
   }
 
-  /* ✅ This Over section */
-  .over-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-  }
-  .over-label {
-    font-size: clamp(12px, 1.6vw, 16px);
-    font-weight: 600;
-    color: #ffeb3b; /* yellow highlight like TV graphics */
-    margin-bottom: 3px;
-    text-shadow: 0 0 4px rgba(0,0,0,0.8);
-  }
-  #lastover {
+  /* ✅ This Over box inline */
+  .over-box {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 4px;
     background: linear-gradient(180deg, rgba(40,40,40,0.95), rgba(15,15,15,0.9));
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 14px;
     padding: 6px 12px;
+    font-weight: 600;
+  }
+  .over-text {
+    color: #ffeb3b; /* Yellow highlight */
+    margin-right: 6px;
+    font-size: clamp(12px, 1.6vw, 16px);
   }
 
   /* ✅ Ball styling */
@@ -118,9 +116,8 @@
   <div class="row">
     <div class="left player" id="player2"></div>
     <div class="center crr" id="crr"></div>
-    <div class="right over-container">
-      <div class="over-label" id="overLabel">This Over</div>
-      <div id="lastover"></div>
+    <div class="right">
+      <div id="lastover" class="over-box"></div>
     </div>
   </div>
 </div>
@@ -183,7 +180,9 @@ async function fetchScore() {
 
     if (data["This Over"]) {
       const balls = data["This Over"].split(" ").filter(x => x.trim() !== "");
-      document.getElementById("lastover").innerHTML = balls.map(formatBall).join(" ");
+      document.getElementById("lastover").innerHTML =
+        `<span class="over-text">This Over:</span>` +
+        balls.map(formatBall).join(" ");
     } else {
       document.getElementById("lastover").innerHTML = "";
     }
