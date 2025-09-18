@@ -1,78 +1,81 @@
 <!DOCTYPE html>
-<!-- MG -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cricket Overlay</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      color: white;
-      background: transparent;
       margin: 0;
-      padding: 0;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.6); /* transparent black */
     }
     .overlay {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 15px 20px;
-      border-radius: 12px;
-      font-size: 18px;
-      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .highlight {
+    .row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 2px 0;
+    }
+    .label {
       font-weight: bold;
-      color: #00ffea;
+      margin-right: 10px;
+    }
+    .value {
+      text-align: right;
     }
   </style>
 </head>
 <body>
   <div class="overlay">
-    <div id="player1"></div>
-    <div id="player2"></div>
-    <div id="ticker"></div>
-    <div id="crr"></div>
-    <div id="bowler"></div>
-    <div id="thisover"></div>
+    <div class="row"><span class="label">Player 1:</span> <span id="player1" class="value"></span></div>
+    <div class="row"><span class="label">Player 2:</span> <span id="player2" class="value"></span></div>
+    <div class="row"><span class="label">Ticker:</span> <span id="ticker" class="value"></span></div>
+    <div class="row"><span class="label">CRR:</span> <span id="crr" class="value"></span></div>
+    <div class="row"><span class="label">Bowler:</span> <span id="bowler" class="value"></span></div>
+    <div class="row"><span class="label">This Over:</span> <span id="thisover" class="value"></span></div>
   </div>
 
   <script>
-    async function fetchData() {
+    function fetchData() {
       const url = "https://docs.google.com/spreadsheets/d/1FUl5P--46Q7uzgUYEcmkVVdwzsRqTpad/gviz/tq?tqx=out:json&gid=658195036";
 
-      const response = await fetch(url);
-      let text = await response.text();
+      fetch(url)
+        .then(res => res.text())
+        .then(text => {
+          const json = JSON.parse(text.substr(47).slice(0, -2));
+          const rows = json.table.rows;
 
-      // Clean Google Sheets JSON
-      text = text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1);
-      const data = JSON.parse(text);
+          let data = {};
+          rows.forEach(row => {
+            if (row.c[0] && row.c[1]) {
+              let key = row.c[0].v;
+              let value = row.c[1].v;
+              data[key] = value;
+            }
+          });
 
-      const rows = data.table.rows;
-      let result = {};
+          console.clear();
+          console.log(data);
 
-      rows.forEach(row => {
-        const key = row.c[0]?.v || "";   // First column = Key
-        const value = row.c[1]?.v || ""; // Second column = Value
-        if (key) {
-          result[key] = value;
-        }
-      });
-
-      console.log(result); // Debugging: See full parsed object
-
-      // Update overlay
-      document.getElementById("player1").innerText = result["Player 1"] || "";
-      document.getElementById("player2").innerText = result["Player 2"] || "";
-      document.getElementById("ticker").innerText  = result["Ticker"]   || "";
-      document.getElementById("crr").innerText     = result["CRR"] ? "CRR: " + result["CRR"] : "";
-      document.getElementById("bowler").innerText  = result["Bowler"] ? "Bowler: " + result["Bowler"] : "";
-      document.getElementById("thisover").innerText= result["This Over"] ? "This Over: " + result["This Over"] : "";
+          document.getElementById("player1").innerText = data["Player 1"] || "";
+          document.getElementById("player2").innerText = data["Player 2"] || "";
+          document.getElementById("ticker").innerText = data["Ticker"] || "";
+          document.getElementById("crr").innerText = data["CRR"] || "";
+          document.getElementById("bowler").innerText = data["Bowler"] || "";
+          document.getElementById("thisover").innerText = data["This Over"] || "";
+        })
+        .catch(err => console.error("Error fetching data:", err));
     }
 
-    setInterval(fetchData, 3000); // auto-refresh every 3s
+    // Refresh every 1s
+    setInterval(fetchData, 1000);
     fetchData();
   </script>
 </body>
